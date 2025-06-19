@@ -49,62 +49,117 @@ const routes = [
     component:Framework,
     children:[
       {
-        path:'/checkIn',
-        component:CheckIn
+        path:'/framework/checkIn',
+        component:CheckIn,
+        meta:{
+          breadcrumb: ['首页','客户管理','入住登记']
+        }
       },{
-        path:'/checkOut',
-        component:CheckOut
+        path:'/framework/checkOut',
+        component:CheckOut,
+        meta:{
+          breadcrumb: ['首页','客户管理','退住登记']
+        }
       },{
-        path:'/goOut',
-        component:GoOut
+        path:'/framework/goOut',
+        component:GoOut,
+        meta:{
+          breadcrumb: ['首页','客户管理','外出登记']
+        }
       },{
-        path:'/bedMap',
-        component:BedMap
+        path:'/framework/bedMap',
+        component:BedMap,
+        meta:{
+          breadcrumb: ['首页','床位管理','床位示意图']
+        }
       },{
-        path:'/bedMGMT',
-        component:BedMGMT
+        path:'/framework/bedMGMT',
+        component:BedMGMT,
+        meta:{
+          breadcrumb: ['首页','床位管理','床位管理']
+        }
       },{
-        path:'/nursingLevel',
-        component:NursingLevel
+        path:'/framework/nursingLevel',
+        component:NursingLevel,
+        meta:{
+          breadcrumb: ['首页','护理管理','护理级别']
+        }
       },{
-        path:'/nursingPro',
-        component:NursingPro
+        path:'/framework/nursingPro',
+        component:NursingPro,
+        meta:{
+          breadcrumb: ['首页','护理管理','护理项目']
+        }
       },{
-        path:'/custNursingPro',
-        component:CustNursingPro
+        path:'/framework/custNursingPro',
+        component:CustNursingPro,
+        meta:{
+          breadcrumb: ['首页','护理管理','客户护理设置']
+        }
       },{
-        path:'/nursingRecord',
-        component:NursingRecord
+        path:'/framework/nursingRecord',
+        component:NursingRecord,
+        meta:{
+          breadcrumb: ['首页','护理管理','护理记录']
+        }
       },{
-        path:'/dietCalendar',
-        component:DietCalendar
+        path:'/framework/dietCalendar',
+        component:DietCalendar,
+        meta:{
+          breadcrumb: ['首页','膳食管理','膳食日历']
+        }
       },{
-        path:'/custDiet',
-        component:CustDiet
+        path:'/framework/custDiet',
+        component:CustDiet,
+        meta:{
+          breadcrumb: ['首页','膳食管理','膳食配置']
+        }
       },{
-        path:'/serviceCust',
-        component:ServiceCust
+        path:'/framework/serviceCust',
+        component:ServiceCust,
+        meta:{
+          breadcrumb: ['首页','健康管家','设置服务对象']
+        }
       },{
-        path:'/serviceFocus',
-        component:ServiceFocus
+        path:'/framework/serviceFocus',
+        component:ServiceFocus,
+        meta:{
+          breadcrumb: ['首页','健康管家','服务关注']
+        }
       },{
-        path:'/UserMGMT',
-        component:UserMGMT
+        path:'/framework/userMGMT',
+        component:UserMGMT,
+        meta:{
+          breadcrumb: ['首页','用户管理','基础数据维护']
+        }
       },{
-        path:'/CheckOutApply',
-        component:CheckOutApply
+        path:'/framework/checkOutApply',
+        component:CheckOutApply,
+        meta:{
+          breadcrumb: ['首页','用户管理','退住申请']
+        }
       },{
-        path:'/CustNursingRe',
-        component:CustNursingRe
+        path:'/framework/goOutApply',
+        component:GoOutApply,
+        meta:{
+          breadcrumb: ['首页','用户管理','外出申请']
+        }
       },{
-        path:'/DayNursing',
-        component:DayNursing
+        path:'/framework/custNursingRe',
+        component:CustNursingRe,
+        meta:{
+          breadcrumb: ['首页','健康管家','服务对象护理记录']
+        }
       },{
-        path:'/GoOutApply',
-        component:GoOutApply
+        path:'/framework/dayNursing',
+        component:DayNursing,
+        meta:{
+          breadcrumb: ['首页','健康管家','日常护理']
+        }
       },{
-        path:'/Welcome',
-        component:Welcome
+        path:'/welcome',
+        component:Welcome,
+        meta:{breadcrumb:'首页'}
       },
     ]
   }
