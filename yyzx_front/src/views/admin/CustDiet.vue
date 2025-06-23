@@ -4,8 +4,9 @@ import {
   Plus, Search, RefreshRight, Edit, Delete
 } from '@element-plus/icons-vue'
 import {ElMessage,ElMessageBox} from "element-plus";
+import axios from "axios";
 let currentPage = ref(1);
-let pageSize = ref(3);
+let pageSize = ref(10);
 let total = ref(0);
 // let arr = ref([]);
 
@@ -14,21 +15,19 @@ const arr = ref([
     name: '张三',
     age: 78,
     gender: '男',
-    floor: '6楼',
-    room: 'A603',
-    taste: ['低油', '低盐'],
-    taboo: ['不吃辣', '不吃香菜'],
-    remark: '无'
+    roomInfo:'606#A702',
+    flavor: ['低油', '低盐'],
+    restraint: ['不吃辣', '不吃香菜'],
+    comment: '无'
   },
   {
     name: '李四',
     age: 82,
     gender: '女',
-    floor: '4楼',
-    room: 'B403',
-    taste: ['低油', '低盐', '低糖'],
-    taboo: ['不吃辣'],
-    remark: '无'
+    roomInfo:'606#A702',
+    flavor: ['低油', '低盐'],
+    restraint: ['不吃辣', '不吃香菜'],
+    comment: '无'
   }
 ])
 
@@ -42,37 +41,74 @@ const handleCurrentChange = (val) => {
   init();
   // console.log(`current page: ${val}`)
 }
+const searchName = ref('');
+
 const init = () => {
   let url = 'CustDietController/showCustDiet';
   const data = {
     cur: currentPage.value,
-    pageSize: pageSize.value
+    pageSize: pageSize.value,
+    name: searchName.value
   };
   axios.get(url,{ params: data }).then(response => {
     let rb = response.data;
     if (rb.status == 200) {
       arr.value = rb.data.map(item=>{
-        const cust = item.CustDietDTO.Cust || {}
-        const diet = item.CustDietDTO.CustDiet || {}
+        const customerId = item.customer?.customerId || '';
+        const name = item.customer?.name || '未知';
+        const gender = item.customer?.gender === 0 ? '男' : '女';
+        const age = item.age || '无';
+        const building = item.room?.buildingNumber ?? '';
+        const room = item.room?.roomNumber ?? '';
+        const roomInfo = `${building}#${room}`;
+        const flavor = item.customerDiet?.flavor ? item.customerDiet.flavor.split(',') : [];
+        const restraint = item.customerDiet?.restraint ? item.customerDiet.restraint.split(',') : [];
+        const comment  = item.customerDiet?.comment || '';
+        const customerDietId = item.customerDiet?.customerDietId || '';
+
         return {
         //   需要查看JSON格式
-        }
-      })
-    } else {
+          customerId,
+          name,
+          age,
+          gender,
+          roomInfo,
+          flavor,
+          restraint,
+          comment,
+          customerDietId
+        };
+      });
+      total.value = rb.total;
+    } else if(rb.status === 500 && rb.msg === '无数据') {
+      arr.value = [];
+      total.value = 0;
+    }else{
       alert(rb.msg);
     }
-  }).catch(error => console.log(error));
+  }).catch(error => {
+    console.error('查询失败：', error);
+  });
 }
 
 // const editDialogRef = ref(null)
 
+
+const editForm = reactive({
+  name: '',
+  roomInfo:'',
+  flavor: [],  // ["低油", "低盐"."低糖"]
+  restraint: [],  // 忌口
+  comment: ''
+})
+
 const handleEdit = (row) => {
-  form.name = row.name
-  form.floor = row.floor
-  form.room = row.room
-  form.flavor = [...(row.taste || [])]
-  form.restraint = [...(row.taboo || [])]
-  form.comment = row.remark || ''
+  editForm.customerDietId = row.customerDietId
+  editForm.name = row.name
+  editForm.roomInfo = row.roomInfo
+  editForm.flavor = [...(row.flavor || [])]
+  editForm.restraint = [...(row.restraint || [])]
+  editForm.comment = row.comment || ''
   visible.value = true
 }
 
@@ -89,9 +125,23 @@ const handleReset = (row) => {
         type: 'warning',
       }
   ).then(() => {
-    // 执行实际重置逻辑，如发请求
-    console.log(`已重置 ${row.name}`)
-    ElMessage.success('重置成功')
+    const payload = {
+      customerDietId: row.customerDietId,
+      flavor: '',
+      restraint: '',
+      comment: ''
+    };
+    // 调用后端接口
+    axios.post('/CustDiet/editCustDiet', payload).then(res => {
+      if (res.data.status === 200) {
+        ElMessage.success('重置成功');
+        init(); // 刷新数据
+      } else {
+        ElMessage.error(res.data.msg || '重置失败');
+      }
+    }).catch(() => {
+      ElMessage.error('网络错误，重置失败');
+    });
   }).catch(() => {
     // 用户取消
     // ElMessage.info('已取消')
@@ -102,24 +152,50 @@ const handleReset = (row) => {
 const visible = ref(false)
 
 // 表单数据
-const form = reactive({
-  name: '',
-  floor: '',
-  room: '',
-  flavor: [],  // ["低油", "低盐"."低糖"]
-  restraint: [],  // 忌口
-  comment: ''
-})
+
 
 // 取消和确定（方法体可留空）
 const handleCancel = () => {
   visible.value = false
 }
 
-const handleConfirm = () => {
+const handleEditConfirm = () => {
+  // 注意edit和reset的post请求可能需要改用qs，具体等后端实现
+  const payload = {
+    customerDietId: editForm.customerDietId,
+    flavor: editForm.flavor.join(','),
+    restraint: editForm.restraint.join(','),
+    comment: editForm.comment || ''
+  };
+  axios.post('/CustDietController/editCustDiet', payload).then(res => {
+    const { status, msg } = res.data;
+    if (status === 200) {
+      ElMessage.success('膳食配置修改成功');
+      visible.value = false;
+      init();  // 刷新数据
+    } else {
+      ElMessage.error(msg || '修改失败');
+    }
+  }).catch(() => {
+    ElMessage.error('网络错误，请稍后重试');
+  });
   // 提交处理逻辑
   visible.value = false
 }
+const handleSearch = () => {
+  currentPage.value = 1; // 搜索时重置为第一页
+  init();
+};
+
+const handleResetSearch = () => {
+  searchName.value = '';
+  currentPage.value = 1; // 重置也跳回第一页
+  init();
+};
+
+// onMounted(() => {
+//   init();
+// });
 </script>
 
 <template>
@@ -136,6 +212,9 @@ const handleConfirm = () => {
       <el-button type="primary" plain @click="handleSearch">
         <el-icon style="margin-right: 5px;"><Search /></el-icon> 搜索
       </el-button>
+      <el-button type="info" plain style="margin-left: 0px" @click="handleResetSearch">
+        <el-icon style="margin-right: 5px;"><RefreshRight/></el-icon> 重置
+      </el-button>
 <!--      <el-button type="primary" plain @click="handleSearch">搜索</el-button>-->
     </div>
     <div class="table-container">
@@ -143,11 +222,10 @@ const handleConfirm = () => {
         <el-table-column prop="name" label="客户姓名"  align="center" />
         <el-table-column prop="age" label="年龄" width="80" align="center" />
         <el-table-column prop="gender" label="性别" width="80" align="center" />
-        <el-table-column prop="floor" label="楼层" width="80" align="center" />
-        <el-table-column prop="room" label="房间号" width="80" align="center" />
-        <el-table-column prop="taste" label="口味"  align="center" />
-        <el-table-column prop="taboo" label="忌口"  align="center" />
-        <el-table-column prop="remark" label="备注"  align="center" />
+        <el-table-column prop="roomInfo" label="房间信息" width="80" align="center" />
+        <el-table-column prop="flavor" label="口味"  align="center" />
+        <el-table-column prop="restraint" label="忌口"  align="center" />
+        <el-table-column prop="comment" label="备注"  align="center" />
         <el-table-column label="操作" width="180" align="center">
           <template #default="scope">
             <el-button type="warning" size="small" plain @click="handleEdit(scope.row)">
@@ -176,46 +254,52 @@ const handleConfirm = () => {
     <el-dialog
         v-model="visible"
         title="膳食配置"
-        width="500px"
+        width="520px"
+        class="diet-dialog"
         :close-on-click-modal="false"
     >
-      <el-form label-width="80px" :model="form" class="form-wrapper">
-        <el-form-item label="老人姓名：">
-          <el-input v-model="form.name" disabled />
+      <el-form label-width="90px" :model="editForm" class="form-wrapper">
+        <el-form-item label="客户姓名">
+          <el-input v-model="editForm.name" disabled />
         </el-form-item>
 
-        <el-form-item label="楼层号：">
-          <el-input v-model="form.floor" disabled style="width: 45%;" />
-          <span style="display: inline-block; width: 10px;"></span>
-          <span>房间号：</span>
-          <el-input v-model="form.room" disabled style="width: 45%;" />
+        <el-form-item label="房间信息">
+          <el-input v-model="editForm.roomInfo" disabled />
         </el-form-item>
 
-        <el-form-item label="口味：">
-          <el-checkbox-group v-model="form.flavor">
+        <el-form-item label="口味偏好">
+          <el-checkbox-group v-model="editForm.flavor">
             <el-checkbox label="低油" />
             <el-checkbox label="低盐" />
             <el-checkbox label="低糖" />
           </el-checkbox-group>
         </el-form-item>
 
-        <el-form-item label="忌口：">
-          <el-checkbox-group v-model="form.restraint">
+        <el-form-item label="忌口">
+          <el-checkbox-group v-model="editForm.restraint">
             <el-checkbox label="不吃辣" />
             <el-checkbox label="不吃香菜" />
           </el-checkbox-group>
         </el-form-item>
 
-        <el-form-item label="备注：">
-          <el-input v-model="form.comment" type="textarea" :rows="3" placeholder="请输入" />
+        <el-form-item label="备注">
+          <el-input
+              v-model="editForm.comment"
+              type="textarea"
+              :rows="3"
+              placeholder="请输入备注信息"
+          />
         </el-form-item>
       </el-form>
 
       <template #footer>
-        <el-button @click="handleCancel">返回</el-button>
-        <el-button type="primary" @click="handleConfirm">确定</el-button>
+        <div class="dialog-footer">
+          <el-button @click="handleCancel">返回</el-button>
+          <el-button type="primary" @click="handleEditConfirm">确定</el-button>
+        </div>
       </template>
     </el-dialog>
+
   </div>
 </template>
 
@@ -240,6 +324,8 @@ const handleConfirm = () => {
   justify-content: flex-start;
   align-items: center;
   gap: 16px;
+  //padding: 0 16px 0 16px;
+  //box-sizing: border-box;
 }
 .search-input {
   width: 240px;
@@ -263,6 +349,24 @@ const handleConfirm = () => {
   width: 100%;
   border-radius: 8px;
   background-color: white;
+  display: flex;
+  justify-content: end;
+  //box-sizing: border-box;
+  //padding: 0px 16px 0px 16px;
+}
+
+.diet-dialog .el-form-item {
+  margin-bottom: 20px;
+}
+
+.diet-dialog .el-input,
+.diet-dialog .el-textarea {
+  width: 100%;
+}
+
+.dialog-footer {
+  text-align: right;
+  padding: 10px 0 0;
 }
 
 </style>

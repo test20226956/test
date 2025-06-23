@@ -171,14 +171,7 @@ const arrangedMeals = reactive({
   flex-direction: column;
   height: 100%;
 }
-.diet-right {
-  border: 1px solid ghostwhite;
-  border-radius: 12px; /* 圆角半径，可根据需要调整 */
-  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.1); /* 阴影效果 */
-  background-color: white;
-  padding: 16px;
-  height: 100%;
-}
+
 
 .diet-search-bar {
   padding: 16px;
@@ -193,6 +186,7 @@ const arrangedMeals = reactive({
   //padding:16px 12px 16px 12px;
   margin-bottom: 16px;
   gap: 16px;
+  box-sizing: border-box;
 }
 
 .diet-arrangement {
@@ -231,18 +225,31 @@ const arrangedMeals = reactive({
 }
 
 
+.diet-right {
+  border: 1px solid ghostwhite;
+  border-radius: 12px; /* 圆角半径，可根据需要调整 */
+  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.1); /* 阴影效果 */
+  background-color: white;
+  padding: 16px;
+  height: 100%;
+  box-sizing: border-box;
+}
+
 
 .diet-right-header {
   display: flex;
   gap: 8px;
-  margin-bottom: 12px;
+  //margin-bottom: 12px;
+  //box-sizing: border-box;
 }
+
+
 
 .diet-search-input {
   flex: 1;
 }
 .diet-right-tabs {
-  margin-bottom: 12px;
+  //margin-bottom: 12px;
 }
 .meal-section {
   margin-top: 0px;

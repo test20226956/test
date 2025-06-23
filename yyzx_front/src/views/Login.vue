@@ -78,28 +78,32 @@ const formRules = reactive({
 })
 
 const login = () => {
-  if (isFormInvalid.value) {
-    ElMessage.warning('请检查输入内容')
-    return
-  }
+  // if (isFormInvalid.value) {
+  //   ElMessage.warning('请检查输入内容')
+  //   return
+  // }
   let url = 'UserController/login';
-  axios.post(url, qs.stringify(user.value)).then(response => {
-    let rb = response.data;
-    if (rb.status == 200) {
-      // 取得登录成功的用户的令牌
-      let user = rb.data;
-      // 把用户对象变成JSON字符串
-      // let userJson=JSON.stringify(user);
-      // 把用户令牌存入前端Session中
-      sessionStorage.setItem('user', user);
-      // 登录成功
-      router.push('/framwork');
-
-    } else {
-      // 登录失败
-      alert(rb.msg);
-    }
-  }).catch(error => console.log(error));
+  console.log(formData.value.userCode)
+  sessionStorage.setItem('userId', formData.value.userCode);
+  // 登录成功
+  router.push('/framework');
+  // axios.post(url, qs.stringify(user.value)).then(response => {
+  //   let rb = response.data;
+  //   if (rb.status == 200) {
+  //     // 取得登录成功的用户的令牌
+  //     let user = rb.data;
+  //     // 把用户对象变成JSON字符串
+  //     // let userJson=JSON.stringify(user);
+  //     // 把用户令牌存入前端Session中
+  //     sessionStorage.setItem('user', user);
+  //     // 登录成功
+  //     router.push('/framwork');
+  //
+  //   } else {
+  //     // 登录失败
+  //     alert(rb.msg);
+  //   }
+  // }).catch(error => console.log(error));
 }
 
 </script>

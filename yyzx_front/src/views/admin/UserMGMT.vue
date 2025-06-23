@@ -22,14 +22,25 @@ const searchUser = reactive({
   account: '',
   type: '',
 });
-const userList = ref([]);
+const userList = ref([
+    {
+      id: 1,
+      account: 'admin',
+      password: '123456',
+      name: '管理员',
+      tel: '12345678901',
+      emaill: '<EMAIL>',
+      empolymentDate: '2021-01-01',
+      type: 0,
+    },
+]);
 
 const addedUser = ref({
   account: '',
   password: '',
   name: '',
   tel: '',
-  emaill: '',
+  email: '',
   empolymentDate: '',
   type: 0,
 });
@@ -96,7 +107,7 @@ const editedUser = ref({
   password: '',
   name: '',
   tel: '',
-  emaill: '',
+  email: '',
   empolymentDate: '',
   type: 0,
 });
@@ -138,7 +149,7 @@ const editformRules = reactive({
       }
     }
   ],
-  emaill: [
+  email: [
     { required: true, message: '请输入邮箱', trigger: 'blur' },
     {
       validator: (rule, value, callback) => {
@@ -170,18 +181,21 @@ const handleCurrentChange = (val) => {
 const init = () => {
   let url = 'UserController/showUser';
   const data = {
-    cur: currentPage.value,
+    pageNum: currentPage.value,
     pageSize: pageSize.value
   };
   axios.get(url,{ params: data }).then(response => {
     let rb = response.data;
+    console.log(rb)
     if (rb.status == 200) {
       userList.value = rb.data
+      total.value = rb.total;
     } else {
       alert(rb.msg);
     }
   }).catch(error => console.log(error));
 }
+init();
 const searchUserByName = () => {
   axios.get('/UserController/searchUser', {
     params: {
@@ -293,12 +307,6 @@ const editUser = () => {
     <div class="table-container">
       <el-row>
         <!--        新增下拉选择框选择老人类型-->
-        <el-col :span="2" :offset="1" class="table-search">
-          <el-select v-model="searchCust.type" placeholder="请选择老人类型">
-            <el-option label="管理员" value=0></el-option>
-            <el-option label="健康管家" value=1></el-option>
-          </el-select>
-        </el-col>
         <el-col :span="2" :offset="18" class="table-search">
           <el-button type="primary" plain @click="addBntVis">
             <el-icon style="margin-right: 5px;">
@@ -310,17 +318,19 @@ const editUser = () => {
       </el-row>
       <el-table :data="userList" border style="width: 100%;">
         <el-table-column prop="account" label="编号" align="center"/>
-        <el-table-column prop="name" label="姓名" align="center"/>
+        <el-table-column prop="userName" label="姓名" align="center"/>
         <el-table-column prop="tel" label="联系电话" align="center"/>
-        <el-table-column prop="bed" label="邮箱" align="center"/>
-        <el-table-column prop="checkInTime" label="入职时间" align="center"/>
+        <el-table-column prop="email" label="邮箱" align="center"/>
+        <el-table-column prop="employmentDate" label="入职时间" align="center"/>
         <el-table-column label="操作" width="180" align="center">
-          <el-button type="warning" size="small" plain @click="editBntVis(scope.row)">
-            <el-icon style="margin-right: 5px;"><Edit /></el-icon> 修改
-          </el-button>
-          <el-button type="danger" size="small" plain @click="confirmDelete(scope.row)">
-            <el-icon style="margin-right: 5px;"><Delete /></el-icon> 删除
-          </el-button>
+          <template #default="scope">
+            <el-button type="warning" size="small" plain @click="editBntVis(scope.row)">
+              <el-icon style="margin-right: 5px;"><Edit /></el-icon> 修改
+            </el-button>
+            <el-button type="danger" size="small" plain @click="confirmDelete(scope.row)">
+              <el-icon style="margin-right: 5px;"><Delete /></el-icon> 删除
+            </el-button>
+          </template>
         </el-table-column>
       </el-table>
     </div>
@@ -336,7 +346,7 @@ const editUser = () => {
       />
     </div>
   </div>
-  <el-dialog v-model="editDialogVisible" title="编辑老人信息" width="50%">
+  <el-dialog v-model="editDialogVisible" title="编辑健康管家信息" width="35%">
     <el-form
         :model="editedUser"
         :rules="editformRules"
@@ -345,7 +355,7 @@ const editUser = () => {
       <el-form-item label="姓名" prop="name"style="width: 60%;">
         <el-input v-model="editedUser.name" placeholder="请输入姓名" disabled></el-input>
       </el-form-item>
-      <el-form-item label="员工编号" prop="account">
+      <el-form-item label="员工编号" prop="account" style="width: 60%;">
         <el-input v-model="editedUser.account" placeholder="请输入员工编号" disabled></el-input>
       </el-form-item>
       <el-form-item label="账号密码" prop="password">
@@ -355,7 +365,7 @@ const editUser = () => {
         <el-input v-model="editedUser.tel" placeholder="请输入联系电话" style="width: 60%;"></el-input>
       </el-form-item>
       <el-form-item label="邮箱" prop="email">
-        <el-input v-model="editedUser.emaill" placeholder="请输入邮箱" style="width: 60%;"></el-input>
+        <el-input v-model="editedUser.email" placeholder="请输入邮箱" style="width: 60%;"></el-input>
       </el-form-item>
       <el-form-item label="到期时间" prop="checkOutTime">
         <el-date-picker
@@ -369,7 +379,7 @@ const editUser = () => {
     </el-form>
     <el-button type="primary" @click="editUser">编辑</el-button>
   </el-dialog>
-  <el-dialog v-model="addDialogVisible" title="添加健康管家信息" width="50%">
+  <el-dialog v-model="addDialogVisible" title="添加健康管家信息" width="35%">
     <el-form
         :model="addedUser"
         :rules="addformRules"
@@ -378,7 +388,7 @@ const editUser = () => {
       <el-form-item label="姓名" prop="name"style="width: 60%;">
         <el-input v-model="addedUser.name" placeholder="请输入姓名" disabled></el-input>
       </el-form-item>
-      <el-form-item label="员工编号" prop="account">
+      <el-form-item label="员工编号" prop="account" style="width: 60%;">
         <el-input v-model="addedUser.account" placeholder="请输入员工编号" disabled></el-input>
       </el-form-item>
       <el-form-item label="账号密码" prop="password">
@@ -388,7 +398,7 @@ const editUser = () => {
         <el-input v-model="addedUser.tel" placeholder="请输入联系电话" style="width: 60%;"></el-input>
       </el-form-item>
       <el-form-item label="邮箱" prop="email">
-        <el-input v-model="addedUser.emaill" placeholder="请输入邮箱" style="width: 60%;"></el-input>
+        <el-input v-model="addedUser.email" placeholder="请输入邮箱" style="width: 60%;"></el-input>
       </el-form-item>
       <el-form-item label="到期时间" prop="checkOutTime">
         <el-date-picker

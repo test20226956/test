@@ -1,38 +1,68 @@
 <script setup>
+const axios = inject('axios');
+import qs from 'qs';
 import {Edit, RefreshRight, Search,Switch} from "@element-plus/icons-vue";
-import {reactive, ref} from "vue";
+import {reactive, ref, onMounted, inject} from "vue";
+import {ElMessage} from "element-plus";
+import dayjs from 'dayjs';
 let currentPage = ref(1);
-let pageSize = ref(3);
+let pageSize = ref(10);
 let total = ref(0);
-const arr = ref([
-  {
-    name: '张三',
-    age: 78,
-    gender: '男',
-    bed: 'A603',
-    startTime:'2025-03-27',
-    endTime:'2024-07-23'
-  },
-  {
-    name: '李四',
-    age: 82,
-    gender: '女',
-    bed:'A703',
-    startTime:'2025-03-27',
-    endTime:'2024-07-23'
-  }
-])
+const activeTab = ref('current');
+const arr = ref(null)
 const changeVisible = ref(false)
 const changeForm = reactive({
+  customerId:'',
   name: '',
   gender: '',
   oldBed: '',
+  floor:'',
   newBuilding: '606',
-  newRoom:'',
-  newBed:'',
-  newStartDate:'',
+  newRoomId: '',
+  newRoomNumber: '',
+  newBed: '',
+  newStartDate: new Date().toISOString().slice(0, 10),
   newEndDate:''
 })
+const availableRooms = ref([])
+const availableBeds = ref([])
+
+const handleFloorChange = () => {
+  // changeForm.newRoom = ''
+  // changeForm.newBed = ''
+  availableRooms.value = []
+  availableBeds.value = []
+
+  if (!changeForm.floor) return
+
+  axios.get('/RoomController/searchRoom', { params: { floor: changeForm.floor } })
+      .then(res => {
+        if (res.data.status === 200) {
+          availableRooms.value = res.data.data
+        } else {
+          ElMessage.error(res.data.msg)
+        }
+      })
+      .catch(() => ElMessage.error('查询房间失败'))
+}
+
+const handleRoomChange = () => {
+  // changeForm.newBed = ''
+  availableBeds.value = []
+
+  if (!changeForm.newRoom) return
+
+  axios.get('/BedRecordController/searchFreeBed', { params: { roomId: changeForm.newRoom } })
+      .then(res => {
+        if (res.data.status === 200) {
+          availableBeds.value = res.data.data
+        } else {
+          ElMessage.error(res.data.msg)
+        }
+      })
+      .catch(() => ElMessage.error('查询床位失败'))
+}
+
 const editVisible = ref(false)
 
 const editForm = reactive({
@@ -53,29 +83,89 @@ const handleCurrentChange = (val) => {
   // console.log(`current page: ${val}`)
 }
 const init = () => {
-  let url = 'BedController/showAllBedRecord';
+  let url = 'BedRecordController/searchBedRecord';
   const data = {
-    cur: currentPage.value,
-    pageSize: pageSize.value
+    pageNum: currentPage.value,
+    pageSize: pageSize.value,
+    state: activeTab.value === 'current' ? 1 : 0,
+    name: searchName.value,
+    startTime:date.value
   };
   axios.get(url,{ params: data }).then(response => {
     let rb = response.data;
+    // console.log('返回数据');
+    // console.log(rb);
     if (rb.status == 200) {
       arr.value = rb.data.map(item=>{
+        const customerId = item.customer?.customerId || '';
+        const name = item.customer?.name || '未知';
+        const gender = item.customer?.gender === 0 ? '男' : '女';
+        const age = item.age || '无';
+        const building = item.room?.buildingNumber ?? '';
+        const room = item.room?.roomNumber ?? '';
+        const bed = item.bed?.bedNumber ?? '';
+        const bedInfo = `${building}#${room}-${bed}`;
+        const startTime = item.bedRecord?.startTime || '';
+        const endTime = item.bedRecord?.endTime || '';
+        const bedRecordId = item.bedRecord?.bedRecordId || '';
 
-      })
-    } else {
+        return{
+          customerId,
+          name,
+          age,
+          gender,
+          bed: bedInfo,
+          startTime,
+          endTime,
+          bedRecordId
+        };
+      });
+      total.value = rb.total;
+    } else if(rb.status === 500 && rb.msg === '无数据') {
+      arr.value = [];
+      total.value = 0;
+    }else{
       alert(rb.msg);
     }
-  }).catch(error => console.log(error));
+  }).catch(error => {
+    console.error('查询失败：', error);
+  });
 }
 
+const handleReset = () => {
+  searchName.value = ''
+  date.value = null
+  init() // 重新加载数据（会带上空的搜索条件）
+}
+
+onMounted(() => {
+  init();
+changeForm.newStartDate = dayjs().format('YYYY-MM-DD')
+});
+
 const handleChange = (row) => {
+  changeForm.customerId = row.customerId
   changeForm.name = row.name
   changeForm.gender = row.gender
   changeForm.oldBed = row.bed
   changeVisible.value = true
 }
+
+const changeFormRef = ref(null)
+const editFormRef = ref(null)
+
+
+const changeRules = {
+  floor: [{ required: true, message: '请选择楼层', trigger: 'change' }],
+  newRoom: [{ required: true, message: '请选择房号', trigger: 'change' }],
+  newBed: [{ required: true, message: '请选择床号', trigger: 'change' }],
+  newEndDate: [{ required: true, message: '请选择结束日期', trigger: 'change' }]
+}
+
+const editRules = {
+  endDate: [{ required: true, message: '请选择结束日期', trigger: 'change' }]
+}
+
 const handleChangeCancel = () => {
   // 清空表单（如需保留填写内容则省略此步）
   resetChangeForm()
@@ -84,12 +174,33 @@ const handleChangeCancel = () => {
 const handleChangeConfirm = () => {
   // 这里只做示例：可在此添加验证和提交逻辑
   console.log('提交床位调换表单：', { ...changeForm })
+  changeFormRef.value.validate((valid) => {
+    if (!valid) return;
 
-  // 例如：axios.post('/bedChange', changeForm).then(...)
-
+    const payload = {
+      customerId: changeForm.customerId,
+      floor: changeForm.floor,
+      roomId: changeForm.newRoom,
+      bedId: changeForm.newBed,
+      endTime: changeForm.newEndDate,
+    };
+    // 例如：axios.post('/bedChange', changeForm).then(...)
+    axios.post('/BedController/changeBed', payload).then(res => {
+      if (res.data.status === 200) {
+        ElMessage.success('床位调换成功');
+        changeVisible.value = false;
+        resetChangeForm();
+        init(); // 刷新列表
+      } else {
+        ElMessage.error(res.data.msg || '提交失败');
+      }
+    }).catch(() => {
+      ElMessage.error('网络错误');
+    });
+  });
   // 关闭弹窗并清空表单
-  resetChangeForm()
-  changeVisible.value = false
+  // resetChangeForm()
+  // changeVisible.value = false
   // init();
 }
 // 表单重置函数
@@ -98,6 +209,7 @@ const resetChangeForm = () => {
   changeForm.gender = ''
   changeForm.oldBed = ''
   changeForm.newBuilding = '606'
+  changeForm.floor = ''
   changeForm.newRoom = ''
   changeForm.newBed = ''
   changeForm.newStartDate = ''
@@ -105,6 +217,7 @@ const resetChangeForm = () => {
 }
 // 修改信息
 const handleEdit = (row) => {
+  editForm.bedRecordId = row.bedRecordId
   editForm.name = row.name
   editForm.gender = row.gender
   editForm.bedInfo = row.bed
@@ -118,12 +231,46 @@ const handleEditCancel = () => {
 }
 
 const handleEditConfirm = () => {
-  console.log('编辑表单提交：', { ...editForm })
+  console.log('编辑表单提交：', { ...editForm });
+  editFormRef.value.validate((valid) => {
+    if (!valid) return;
 
-  // 例如提交：axios.post('/editBedRecord', editForm).then(...)
+    const payload = {
+      bedRecordId: editForm.bedRecordId,
+      endTime: dayjs(editForm.endDate).format('YYYY-MM-DD')
+    };
 
-  editVisible.value = false
+    axios.post(
+        '/BedRecordController/editBedRecord',
+        qs.stringify(payload), // 转为表单格式
+        { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+    )
+        .then(res => {
+          if (res.data.status === 200) {
+            ElMessage.success('床位信息修改成功');
+            editVisible.value = false;
+            init(); // 刷新数据
+          } else {
+            ElMessage.error(res.data.msg || '修改失败');
+          }
+        })
+        .catch(() => {
+          ElMessage.error('网络异常，修改失败');
+        });
+  });
+};
+const handleTabChange = () => {
+  currentPage.value = 1;
+  init();
 }
+
+const searchName = ref('');
+const searchDate = ref('');
+const date = ref('');
+const handleSearch = () => {
+  currentPage.value = 1;
+  init();
+};
 </script>
 
 <template>
@@ -145,10 +292,13 @@ const handleEditConfirm = () => {
       <el-button type="primary" plain @click="handleSearch">
         <el-icon style="margin-right: 5px;"><Search /></el-icon> 搜索
       </el-button>
+      <el-button type="info" plain style="margin-left: 0px" @click="handleReset">
+        <el-icon style="margin-right: 5px;"><RefreshRight/></el-icon> 重置
+      </el-button>
     </div>
 
     <div class="table-container">
-      <el-tabs v-model="activeTab" type="card" class="custom-tabs" style="padding-bottom: 0px">
+      <el-tabs v-model="activeTab" type="card" class="custom-tabs" style="padding-bottom: 0px" @tab-change="handleTabChange">
         <el-tab-pane label="正在使用" name="current"></el-tab-pane>
         <el-tab-pane label="历史使用" name="history"></el-tab-pane>
       </el-tabs>
@@ -193,14 +343,14 @@ const handleEditConfirm = () => {
       width="600px"
       :close-on-click-modal="false"
   >
-    <el-form :model="changeForm" label-width="100px" class="dialog-form" label-position="top">
+    <el-form :model="changeForm" label-width="100px" class="dialog-form" label-position="top" ref="changeFormRef" :rules="changeRules">
       <el-row :gutter="20">
-        <el-col :span="12" class="changeForm-col">
+        <el-col :span="12">
           <el-form-item label="老人姓名：">
             <el-input v-model="changeForm.name" disabled />
           </el-form-item>
         </el-col>
-        <el-col :span="12" class="changeForm-col">
+        <el-col :span="12">
           <el-form-item label="旧床位：">
             <el-input v-model="changeForm.oldBed" disabled />
           </el-form-item>
@@ -214,11 +364,9 @@ const handleEditConfirm = () => {
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="新楼栋：">
-            <el-select v-model="changeForm.newBuilding" placeholder="请选择楼栋">
-              <el-option label="606" value="606" />
-<!--              <el-option label="607" value="607" />-->
-              <!-- 其他楼栋可添加 -->
+          <el-form-item label="楼层：" prop="floor">
+            <el-select v-model="changeForm.floor" placeholder="请选择楼层" @change="handleFloorChange">
+              <el-option v-for="f in [1, 2, 3, 4, 5, 6]" :key="f" :label="`${f}层`" :value="f" />
             </el-select>
           </el-form-item>
         </el-col>
@@ -226,33 +374,30 @@ const handleEditConfirm = () => {
 
       <el-row :gutter="20">
         <el-col :span="12">
-          <el-form-item label="新房号：">
-            <el-select v-model="changeForm.newRoom" placeholder="请选择房号">
-              <el-option label="B401" value="B401" />
-              <el-option label="B402" value="B402" />
+          <el-form-item label="房号：" prop="newRoom">
+            <el-select v-model="changeForm.newRoom" placeholder="请选择房号" :disabled="!changeForm.floor" @change="handleRoomChange">
+              <el-option v-for="room in availableRooms" :key="room.roomId" :label="room.roomNumber" :value="room.roomId" />
             </el-select>
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="当前床位使用起始日期：">
-            <el-date-picker v-model="changeForm.newStartDate" type="date" placeholder="请选择日期" style="width: 100%;" />
+          <el-form-item label="床号：" prop="newBed">
+            <el-select v-model="changeForm.newBed" placeholder="请选择床号" :disabled="!changeForm.newRoom">
+              <el-option v-for="bed in availableBeds" :key="bed.bedId" :label="bed.bedNumber" :value="bed.bedId" />
+            </el-select>
           </el-form-item>
         </el-col>
       </el-row>
 
       <el-row :gutter="20">
         <el-col :span="12">
-          <el-form-item label="新床号：">
-            <el-select v-model="changeForm.newBed" placeholder="请选择床号">
-              <el-option label="1" value="1" />
-              <el-option label="2" value="2" />
-              <el-option label="3" value="3" />
-            </el-select>
+          <el-form-item label="开始日期：" prop="newStartDate">
+            <el-date-picker v-model="changeForm.newStartDate" disabled type="date" style="width: 100%;" />
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="当前床位使用结束日期：">
-            <el-date-picker v-model="changeForm.newEndDate" type="date" placeholder="请选择日期" style="width: 100%;" />
+          <el-form-item label="结束日期：" prop="newEndDate">
+            <el-date-picker v-model="changeForm.newEndDate" type="date" placeholder="请选择结束日期" style="width: 100%;" />
           </el-form-item>
         </el-col>
       </el-row>
@@ -272,7 +417,7 @@ const handleEditConfirm = () => {
       width="600px"
       :close-on-click-modal="false"
   >
-    <el-form :model="editForm" label-width="100px" class="dialog-form" label-position="top">
+    <el-form :model="editForm" label-width="100px" class="dialog-form" label-position="top" ref="editFormRef" :rules="editRules">
       <el-row :gutter="20">
         <el-col :span="12">
           <el-form-item label="老人姓名：">
@@ -293,12 +438,12 @@ const handleEditConfirm = () => {
       <el-row :gutter="20">
         <el-col :span="12">
           <el-form-item label="当前床位使用开始日期：">
-            <el-date-picker v-model="editForm.startDate" type="date" style="width: 100%;" />
+            <el-date-picker v-model="editForm.startDate" disabled type="date" style="width: 100%;" />
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="当前床位使用结束日期：">
-            <el-date-picker v-model="editForm.endDate" type="date" style="width: 100%;" />
+          <el-form-item label="当前床位使用结束日期：" prop="endDate">
+            <el-date-picker v-model="editForm.endDate" type="date" style="width: 100%;" placeholder="请选择床位结束日期"/>
           </el-form-item>
         </el-col>
       </el-row>
@@ -317,6 +462,7 @@ const handleEditConfirm = () => {
 <style scoped>
 .layout {
   height: 100%;
+  //min-height: 100vh;
   padding: 16px;
   box-sizing: border-box;
   //overflow:hidden;
@@ -343,12 +489,15 @@ const handleEditConfirm = () => {
   display: flex;
   flex-direction: column;
   width: 100%;
+  //height: 100%;
   flex: 1;
+  //flex-shrink: 0;
   background-color: white;
   border-radius: 8px;
   justify-content: center;
   padding: 10px;
   box-sizing: border-box;
+  min-height: 200px;
 }
 
 .page-container{
@@ -358,10 +507,10 @@ const handleEditConfirm = () => {
   background-color: white;
   display: flex;
   justify-content: end;
-  align-content: center;
+  //align-content: center;
   box-sizing: border-box;
   padding: 0px 16px 0px 16px;
-  overflow-x: hidden;
+  //overflow-x: hidden;
   //flex-direction: column;
 }
 

@@ -262,21 +262,25 @@ const handleCurrentChange = (val) => {
   console.log(`current page: ${val}`)
 }
 const init = () => {
-  let url = 'CustmerController/showSelfCust';
-  if(searchCust.value.state==1) url = 'CustmerController/showCareCust';
+  let url = 'CustomerController/showSelfCust';
+  if(searchCust.value.state==1) url = 'CustomerController/showCareCust';
+  console.log(url)
   const data = {
-    cur: currentPage.value,
+    pageNum: currentPage.value,
     pageSize: pageSize.value
   };
   axios.get(url,{ params: data }).then(response => {
     let rb = response.data;
     if (rb.status == 200) {
+      console.log(rb.data)
       customerList.value = rb.data
+      total.value = rb.total
     } else {
       alert(rb.msg);
     }
   }).catch(error => console.log(error));
 }
+init();
 // 根据楼层获取房间号
 const errorRooms = ref('')
 const showRooms = (floor) => {
@@ -558,9 +562,9 @@ const deleteRecord = (id) => {
       </el-row>
       <el-table :data="customerList" border style="width: 100%;">
         <el-table-column prop="name" label="客户姓名" align="center"/>
-        <el-table-column prop="age" label="年龄" width="80" align="center"/>
-        <el-table-column prop="gender" label="性别" width="80" align="center"/>
-        <el-table-column prop="id" label="身份证号" align="center"/>
+        <el-table-column prop="age" label="年龄" width="60" align="center"/>
+        <el-table-column prop="gender" label="性别" width="60" align="center"/>
+        <el-table-column prop="id" label="身份证号" width="165" align="center"/>
         <el-table-column prop="blood" label="血型" align="center"/>
         <el-table-column prop="contact" label="联系人" align="center"/>
         <el-table-column prop="tel" label="联系电话" align="center"/>
@@ -570,12 +574,14 @@ const deleteRecord = (id) => {
         <el-table-column prop="checkInTime" label="入住时间" align="center"/>
         <el-table-column prop="chheckOutTime" label="合同到期时间" align="center"/>
         <el-table-column label="操作" width="180" align="center">
-          <el-button type="warning" size="small" plain @click="getCust(scope.row)">
-            <el-icon style="margin-right: 5px;"><Edit /></el-icon> 修改
-          </el-button>
-          <el-button type="danger" size="small" plain @click="confirmDelete(scope.row)">
-            <el-icon style="margin-right: 5px;"><Delete /></el-icon> 删除
-          </el-button>
+          <template #default="scope">
+            <el-button type="warning" size="small" plain @click="getCust(scope.row)">
+              <el-icon style="margin-right: 5px;"><Edit /></el-icon> 修改
+            </el-button>
+            <el-button type="danger" size="small" plain @click="confirmDelete(scope.row)">
+              <el-icon style="margin-right: 5px;"><Delete /></el-icon> 删除
+            </el-button>
+          </template>
         </el-table-column>
       </el-table>
     </div>
@@ -741,7 +747,7 @@ const deleteRecord = (id) => {
     <el-button type="primary" @click="addCust">添加</el-button>
   </el-drawer>
 <!--  添加一个弹窗用于完成用户信息的修改，在点击修改按钮时自动传入该行的老人信息用于修改-->
-  <el-dialog v-model="editDialogVisible" title="编辑老人信息" width="50%">
+  <el-dialog v-model="editDialogVisible" title="编辑老人信息" width="40%">
     <el-form
         :model="editedCust"
         :rules="editformRules"
@@ -750,9 +756,9 @@ const deleteRecord = (id) => {
       <el-form-item label="姓名" prop="name"style="width: 60%;">
         <el-input v-model="editedCust.name" placeholder="请输入姓名" disabled></el-input>
       </el-form-item>
-      <el-form-item label="身份证号" prop="id">
+      <el-form-item label="身份证号" prop="id" style="width: 60%;">
         <el-input v-model="editedCust.id" placeholder="请输入身份证号" disabled></el-input>
-      </el-form-item>el-row>
+      </el-form-item>
       <el-form-item label="性别" prop="gender"style="width: 60%;">
         <el-select v-model="editedCust.gender" placeholder="请选择性别">
           <el-option label="男" value="男"></el-option>
