@@ -1,11 +1,282 @@
 <script setup>
+import {Edit, RefreshRight, Search} from "@element-plus/icons-vue";
+import { ref, reactive, computed, inject } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { ElMessage, ElLoading,  FormItemProps, FormProps } from 'element-plus'
 
+const route = useRoute();
+const router = useRouter();
+const axios = inject('axios');
+
+let currentPage = ref(1);
+let pageSize = ref(3);
+let total = ref(0);
+const size = ref('default');
+const dialogVisible = ref(false);
+const addDialogVisible = ref(false);
+const labelPosition = ref('right')
+
+const custId = ref('');
+const searchCust = ref({
+  name: '',
+});
+
+const searchRecord = ref({
+  name: '',
+  applyTime: '',
+});
+const customerList = ref([]);
+const recordList = ref([]);
+
+const handleSizeChange = (val) => {
+  pageSize.value = val;
+  init();
+  console.log(`${val} items per page`)
+}
+const handleCurrentChange = (val) => {
+  currentPage.value = val;
+  init();
+  console.log(`current page: ${val}`)
+}
+
+const init = () => {
+  const userid = sessionStorage.getItem('userId');
+  let url = 'UerController/showUserCust';
+  const data = {
+    userId : userid,
+    pageNum: currentPage.value,
+    pageSize: pageSize.value
+  };
+  axios.get(url,{ params: data }).then(response => {
+    let rb = response.data;
+    if (rb.status == 200) {
+      console.log(rb.data)
+      customerList.value = rb.data
+      total.value = rb.total
+    } else {
+      alert(rb.msg);
+    }
+  }).catch(error => console.log(error));
+}
+init();
+
+const searchCustByName = () => {
+  const userid = sessionStorage.getItem('userId');
+  const url = 'UserController/searchUserCust';
+  const data = {
+    userId : userid,
+    name: searchCust.value.name,
+    pageNum: currentPage.value,
+    pageSize: pageSize.value
+  };
+  axios.get(url,{ params: data }).then(response => {
+    let rb = response.data;
+    if (rb.status == 200) {
+      customerList.value = rb.data;
+      total.value = rb.total
+    }
+  }).catch(error => console.log(error));
+}
+
+const showProRe = (row) => {
+  custId.value = row.id;
+  dialogVisible.value = true;
+  getProRe();
+}
+
+const getRecord = () => {
+  const url = "UerController/showCareRecord";
+  const data = {
+    customerId : custId.value,
+  }
+  axios.get(url,{ params: data }).then(response => {
+    let rb = response.data;
+    if (rb.status == 200) {
+      careRecordList.value = rb.data;
+    }else{
+      alert(rb.msg);
+    }
+  }).catch(error => console.log(error));
+}
+
+const searchRecordByName = () => {
+  const url = "UerController/searchCareRecord";
+  const data = {
+    customerId : custId.value,
+    name : searchRecord.value.name,
+    time : searchRecord.value.applyTime
+  }
+  axios.get(url,{ params: data }).then(response => {
+    let rb = response.data;
+    if (rb.status == 200) {
+      recordList.value = rb.data;
+    }else {
+      alert(rb.msg);
+    }
+  }).catch(error => console.log(error));
+}
+
+const deleteRecord = (row) => {
+  const url = "UerController/deleteCareRecord";
+  const data = {
+    ids: row.id,
+  };
+  axios.post(url, data).then(response => {
+    if(response.data.code == 200){
+      alert(response.data.msg);
+      getRecord();
+    }else{
+      alert(response.data.msg);
+    }
+  }).catch(error => console.log(error));
+}
 </script>
 
 <template>
- <p>服务对象</p>
+  <div class="layout">
+    <!--  上面搜索栏-->
+    <div class="search-div">
+      <el-row :gutter="20">
+        <el-col :offset="2" :span="5" class="search-col">
+          <el-form-item label="老人姓名">
+            <el-input v-model="searchCust.name" placeholder="请输入老人姓名"></el-input>
+          </el-form-item>
+        </el-col>
+        <el-col :span="2" class="search-col">
+          <el-button type="primary" plain @click="searchCustByName">
+            <el-icon style="margin-right: 5px;">
+              <Search/>
+            </el-icon>
+            搜索
+          </el-button>
+        </el-col>
+        <el-col :span="2" class="search-col">
+          <el-button type="info" plain>
+            <el-icon style="margin-right: 5px;">
+              <RefreshRight/>
+            </el-icon>
+            重置
+          </el-button>
+        </el-col>
+      </el-row>
+    </div>
+    <div class="table-container">
+      <el-table :data="customerList" border style="width: 100%;">
+        <el-table-column type="index" label="#" width="50" align="center"/>
+        <el-table-column prop="name" label="客户姓名" align="center"/>
+        <el-table-column prop="age" label="年龄" width="60" align="center"/>
+        <el-table-column prop="gender" label="性别" width="60" align="center"/>
+        <el-table-column prop="blood" label="血型" align="center"/>
+        <el-table-column prop="contact" label="联系人" align="center"/>
+        <el-table-column prop="tel" label="联系电话" align="center"/>
+        <el-table-column prop="floor" label="楼层" align="center"/>
+        <el-table-column prop="room" label="房间号" align="center"/>
+        <el-table-column label="操作" width="180" align="center">
+          <template #default="scope">
+            <el-button type="warning" size="small" plain @click="showProRe(scope.row)">
+              <el-icon style="margin-right: 5px;"><Edit /></el-icon> 查看护理记录
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </div>
+    <div class="page-container">
+      <el-pagination
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :page-sizes="[3,5,7]"
+          layout="total, sizes, prev, pager, next, jumper"
+          :total="total"
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+      />
+    </div>
+  </div>
+  <el-dialog title="查看护理记录" v-model="dialogVisible" width="40%">
+    <el-row :gutter="20">
+      <el-col :offset="2" :span="6" class="search-col">
+        <el-form-item label="项目名称">
+          <el-input v-model="searchRecord.name" placeholder="请输入老人姓名"></el-input>
+        </el-form-item>
+      </el-col>
+      <el-col :offset="2" :span="6" class="search-col">
+        <el-form-item label="申请时间">
+          <el-input v-model="searchRecord.applyTime" placeholder="请输入申请时间"></el-input>
+        </el-form-item>
+      </el-col>
+      <el-col :span="6" class="search-col">
+        <el-button type="primary" plain @click="searchRecordByName">
+          <el-icon style="margin-right: 5px;">
+            <Search/>
+          </el-icon>
+          搜索
+        </el-button>
+      </el-col>
+    </el-row>
+    <el-table :data="recordList" border style="width: 100%;">
+      <el-table-column type="index" label="#" width="50" align="center"/>
+      <el-table-column prop="name" label="服务名称" align="center"/>
+      <el-table-column prop="time" label="护理时间" width="60" align="center"/>
+      <el-table-column label="操作" width="120" align="center">
+        <template #default="scope">
+          <el-button type="warning" size="small" plain @click="deleteRecord(scope.row)">
+            <el-icon style="margin-right: 5px;"><Edit /></el-icon> 删除
+          </el-button>
+        </template>
+      </el-table-column>
+    </el-table>
+  </el-dialog>
 </template>
 
 <style scoped>
+.layout {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 16px 10px 0 10px;
+  margin: 0 0 0 0;
+  box-sizing: border-box;
+  gap: 16px; /* 区块间距，替代 margin-bottom */
+  background-color: #f0f2f5;
+}
+.search-div{
+  width: 100%;
+  flex: 0 0 15%; /* 高度为 20% */
+  border: 1px solid ghostwhite;
+  border-radius: 12px; /* 圆角半径，可根据需要调整 */
+  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.1); /* 阴影效果 */
+  background-color: white;
+}
+.table-container{
+  width: 100%;
+  flex: 1;
+  //border: 2px solid darkblue;
+  background-color: white;
+  border-radius: 8px;
+}
+.page-container{
+  flex: 0 0 10%;
+  width: 100%;
+  border-radius: 8px;
+  //border: 2px solid darkblue;
+  display: flex;
+  justify-content: center;
+  background-color: white;
 
+}
+.search-col{
+  display: flex;            /* 关键 */
+  align-items: center;
+  margin-top: 40px;
+}
+
+.table-search{
+  margin-top: 15px;
+  margin-bottom: 15px;
+}
+
+.dialog-footer {
+  text-align: right;
+  margin-top: 20px;
+}
 </style>

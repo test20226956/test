@@ -52,7 +52,7 @@ const handleRoomChange = () => {
 
   if (!changeForm.newRoom) return
 
-  axios.get('/BedRecordController/searchFreeBed', { params: { roomId: changeForm.newRoom } })
+  axios.get('/BedController/searchFreeBed', { params: { roomId: changeForm.newRoom } })
       .then(res => {
         if (res.data.status === 200) {
           availableBeds.value = res.data.data
@@ -89,8 +89,9 @@ const init = () => {
     pageSize: pageSize.value,
     state: activeTab.value === 'current' ? 1 : 0,
     name: searchName.value,
-    startTime:date.value
+    startTime: date.value ? dayjs(date.value).format('YYYY-MM-DD') : ''
   };
+  console.log('搜索参数', data);
   axios.get(url,{ params: data }).then(response => {
     let rb = response.data;
     // console.log('返回数据');
@@ -140,7 +141,7 @@ const handleReset = () => {
 
 onMounted(() => {
   init();
-changeForm.newStartDate = dayjs().format('YYYY-MM-DD')
+  changeForm.newStartDate = dayjs().format('YYYY-MM-DD')
 });
 
 const handleChange = (row) => {
@@ -148,6 +149,7 @@ const handleChange = (row) => {
   changeForm.name = row.name
   changeForm.gender = row.gender
   changeForm.oldBed = row.bed
+  changeForm.newStartDate = dayjs().format('YYYY-MM-DD')
   changeVisible.value = true
 }
 
@@ -177,15 +179,22 @@ const handleChangeConfirm = () => {
   changeFormRef.value.validate((valid) => {
     if (!valid) return;
 
+    const selectedRoom = availableRooms.value.find(r => r.roomId === changeForm.newRoom);
+    const selectedBed = availableBeds.value.find(b => b.bedId === changeForm.newBed);
+
     const payload = {
       customerId: changeForm.customerId,
       floor: changeForm.floor,
-      roomId: changeForm.newRoom,
-      bedId: changeForm.newBed,
-      endTime: changeForm.newEndDate,
+      roomNumber: selectedRoom?.roomNumber,
+      bedNumber: selectedBed?.bedNumber,
+      endTime: dayjs(changeForm.newEndDate).format('YYYY-MM-DD'),
     };
     // 例如：axios.post('/bedChange', changeForm).then(...)
-    axios.post('/BedController/changeBed', payload).then(res => {
+    axios.post(
+        '/BedRecordController/changeBed',
+        qs.stringify(payload),
+        { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+    ).then(res => {
       if (res.data.status === 200) {
         ElMessage.success('床位调换成功');
         changeVisible.value = false;
@@ -286,7 +295,7 @@ const handleSearch = () => {
       <el-date-picker
           v-model="date"
           type="date"
-          placeholder="请选择日期"
+          placeholder="筛选该日期后开始使用的记录"
           style="width: 240px"
       />
       <el-button type="primary" plain @click="handleSearch">
@@ -312,11 +321,11 @@ const handleSearch = () => {
         <el-table-column prop="endTime" label="床位结束使用时间"  align="center" />
         <el-table-column label="操作" width="180" align="center">
           <template #default="scope">
-            <el-button type="primary" size="small" plain @click="handleChange(scope.row)">
+            <el-button type="primary" size="small" plain @click="handleChange(scope.row)" :disabled="activeTab !=='current'">
               <el-icon style="margin-right: 5px;"><Switch /></el-icon>调换
             </el-button>
             <!--            <el-button size="small" @click="handleEdit(scope.row)">编辑</el-button>-->
-            <el-button type="warning" size="small" plain @click="handleEdit(scope.row)">
+            <el-button type="warning" size="small" plain @click="handleEdit(scope.row) " :disabled="activeTab !=='current'">
               <el-icon style="margin-right: 5px;"><Edit/></el-icon>修改
             </el-button>
             <!--            <el-button size="small" type="warning" @click="handleReset(scope.row)">重置</el-button>-->
@@ -405,12 +414,12 @@ const handleSearch = () => {
 
     <template #footer>
       <div class="dialog-footer">
-      <el-button @click="handleChangeCancel">返回</el-button>
-      <el-button type="primary" @click="handleChangeConfirm">确定</el-button>
+        <el-button @click="handleChangeCancel">返回</el-button>
+        <el-button type="primary" @click="handleChangeConfirm">确定</el-button>
       </div>
     </template>
   </el-dialog>
-<!--修改床位信息对话框-->
+  <!--修改床位信息对话框-->
   <el-dialog
       v-model="editVisible"
       title="修改信息"
@@ -457,7 +466,7 @@ const handleSearch = () => {
     </template>
   </el-dialog>
 
-  </template>
+</template>
 
 <style scoped>
 .layout {

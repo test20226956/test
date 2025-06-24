@@ -71,7 +71,7 @@
                   <el-table-column label="操作" width="180" align="center">
                     <template v-slot="scope">
                       <el-button type="danger" size="small" plain
-                                 @click="deleteProject(scope.row)">
+                                 @click="deleteProjectWhenExpand(scope.row, props.row)">
                         <el-icon style="margin-right: 5px;">
                           <Delete />
                         </el-icon> 删除
@@ -95,7 +95,7 @@
                     <Edit />
                   </el-icon> 修改
                 </el-button>
-                <el-button type="danger" size="small" plain @click="deleteProject(scope.row)">
+                <el-button type="danger" size="small" plain @click="deleteLevel(scope.row)">
                   <el-icon style="margin-right: 5px;">
                     <Delete />
                   </el-icon> 删除
@@ -201,7 +201,7 @@
             <el-table-column prop="time" label="护理频次" width="100" align="center"/>
             <el-table-column fixed="right" label="操作" min-width="100" align="center">
               <template v-slot="scope">
-                <el-button type="danger" size="small" plain @click="deleteProject(scope.row)">
+                <el-button type="danger" size="small" plain @click="deleteProjectWhenEdit(scope.row)">
                   <el-icon style="margin-right: 5px;"><Delete /></el-icon> 删除
                 </el-button>
               </template>
@@ -653,6 +653,7 @@ const resetEditForm = () => {
     state: 1,
     projects: [],
   }
+  editFormRef.value?.clearValidate();
 }
 
 
@@ -799,7 +800,7 @@ const proDialogClose = () => {
 }
 
 // 在修改界面删除已经添加的项目
-const deleteProject = (row) => {
+const deleteProjectWhenEdit = (row) => {
   ElMessageBox.confirm('是否删除？')
       .then(() => {
         const index = editedLevel.value.projects.findIndex(item => item.nursingProjectId === row.nursingProjectId);
@@ -827,14 +828,14 @@ const submitEdit = () => {
       levelId: editedLevel.value.nursingLevelId,
       proIds: editedLevel.value.projects.map(p => p.nursingProjectId),
     }
+    let editLevelState = 0;
+    let editProjectsState = 0;
     if(valid){
       let url1 = `NursingLevelController/editLevel`;
       axios.post(url1, qs.stringify(levelData)).then(response => {
         let rb = response.data;
         if(rb.status === 200){
-          console.log("修改成功！");
-          ElMessage({message:'修改成功', type:'success'});
-          resetTable();
+          editLevelState = 1;
         }else{
           console.log(msg);
         }
@@ -842,14 +843,77 @@ const submitEdit = () => {
         console.log(error);
       });
       let url2 = `NursingLevelController/editProjects`;
-
+      axios.post(url2, qs.stringify(proData)).then(response => {
+        let rb = response.data;
+        if(rb.status === 200){
+          editProjectsState = 1;
+        }
+      }).catch(error => {
+        console.log(error);
+      })
     }else{
       console.log("修改项目时表单验证未通过");
       return false;
     }
+    if(editLevelState === 1 && editProjectsState === 1){
+      console.log("修改成功！");
+      ElMessage({message:'修改成功', type:'success'});
+      editDialogVisible.value = false;
+      resetTable();
+      resetEditForm();
+    }else{
+      ElMessage({message:"修改失败", type:'error'});
+    }
   })
 }
 
+// 删除级别
+const deleteLevel = (row) => {
+  console.log("delete level");
+  console.log(row);
+  ElMessageBox.confirm('确定删除这个级别？')
+      .then(() => {
+        let url = `NursingLevelController/deleteNursingPro`;
+        axios.post(url, row.nursingLevelId).then(response => {
+          let rb = response.data;
+          if(rb.status === 200){
+            ElMessage({message:'删除成功', type:'success'});
+          }else{
+            console.log(rb.msg);
+          }
+        }).catch(error => {
+          console.log(error);
+        })
+      }).catch((error) => {
+    console.log(error);
+  })
+}
+
+// 在展开时删除级别下的项目
+const deleteProjectWhenExpand = (proRow, lvRow) => {
+  console.log('delete project when expand');
+  let data = {
+    levelId: lvRow.nursingLevelId,
+    proId: proRow.nursingProjectId,
+  }
+  ElMessageBox.confirm('确定删除这条表项？')
+      .then(() => {
+        let url = `NursingLevelController/deleteNursingPro`;
+        axios.post(url, qs.stringify(data)).then(response => {
+          let rb = response.data;
+          if(rb === 200){
+            console.log('修改成功');
+            resetTable();
+          }else{
+            console.log(rb.msg);
+          }
+        }).catch(error => {
+          console.log(error);
+        })
+      }).catch((error) => {
+    console.log(error);
+  })
+}
 
 // 分页
 const handleCurrentChange = (val) => {

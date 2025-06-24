@@ -436,6 +436,7 @@ const searchCustByName = () => {
     let rb = response.data;
     if (rb.status == 200) {
       customerList.value = rb.data;
+      total.value = rb.total
     }else {
       alert(rb.msg);
     }
@@ -561,6 +562,7 @@ const deleteRecord = (id) => {
         </el-col>
       </el-row>
       <el-table :data="customerList" border style="width: 100%;">
+        <el-table-column type="index" label="#" align="center"/>
         <el-table-column prop="name" label="客户姓名" align="center"/>
         <el-table-column prop="age" label="年龄" width="60" align="center"/>
         <el-table-column prop="gender" label="性别" width="60" align="center"/>
@@ -744,7 +746,11 @@ const deleteRecord = (id) => {
       </el-form-item>
     </el-form>
     <!--    添加“老人入住信息”填写完毕，点击“添加”按钮，将填写的表单信息添加到数据库中。-->
-    <el-button type="primary" @click="addCust">添加</el-button>
+    <template #footer>
+      <div class="dialog-footer">
+        <el-button type="primary" @click="addCust">添加</el-button>
+      </div>
+    </template>
   </el-drawer>
 <!--  添加一个弹窗用于完成用户信息的修改，在点击修改按钮时自动传入该行的老人信息用于修改-->
   <el-dialog v-model="editDialogVisible" title="编辑老人信息" width="40%">
@@ -857,5 +863,10 @@ const deleteRecord = (id) => {
 .table-search{
   margin-top: 15px;
   margin-bottom: 15px;
+}
+
+.dialog-footer {
+  text-align: right;
+  margin-top: 20px;
 }
 </style>

@@ -284,7 +284,7 @@ const searchProjects = () => {
   axios.get(url).then(response => {
     let rb = response.data;
     if(rb.status === 200){
-      ElMessage({message:`搜索到${total}条表项`, type:'success'});
+      ElMessage({message:`搜索到${rb.total}条表项`, type:'success'});
       nursingProjectList.value = rb.data;
       total.value = rb.total;
     }else{
@@ -307,6 +307,7 @@ const submitForm = () => {
           if(rb.status === 200){
             ElMessage({message:'添加成功', type:'success'});
             resetTable();
+            resetForm();
           }else{
             console.log(rb.msg);
           }
@@ -321,6 +322,7 @@ const submitForm = () => {
           if(rb.status === 200){
             ElMessage({message:'修改成功', type:'success'});
             resetTable();
+            resetForm();
           }else{
             console.log(rb.msg);
           }
