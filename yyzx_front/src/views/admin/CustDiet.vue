@@ -5,6 +5,9 @@ import {
 } from '@element-plus/icons-vue'
 import {ElMessage,ElMessageBox} from "element-plus";
 import axios from "axios";
+
+// ---------------------初始化和搜索客户膳食配置------------------------
+
 let currentPage = ref(1);
 let pageSize = ref(10);
 let total = ref(0);
@@ -91,8 +94,19 @@ const init = () => {
   });
 }
 
-// const editDialogRef = ref(null)
+const handleSearch = () => {
+  currentPage.value = 1; // 搜索时重置为第一页
+  init();
+};
+// ---------------------重置搜索------------------------
 
+const handleResetSearch = () => {
+  searchName.value = '';
+  currentPage.value = 1; // 重置也跳回第一页
+  init();
+};
+// ---------------------编辑客户膳食配置------------------------
+const editVisible = ref(false)
 
 const editForm = reactive({
   name: '',
@@ -109,8 +123,37 @@ const handleEdit = (row) => {
   editForm.flavor = [...(row.flavor || [])]
   editForm.restraint = [...(row.restraint || [])]
   editForm.comment = row.comment || ''
-  visible.value = true
+  editVisible.value = true
 }
+
+const handleEditConfirm = () => {
+  // 注意edit和reset的post请求可能需要改用qs，具体等后端实现
+  const payload = {
+    customerDietId: editForm.customerDietId,
+    flavor: editForm.flavor.join(','),
+    restraint: editForm.restraint.join(','),
+    comment: editForm.comment || ''
+  };
+  axios.post('/CustDietController/editCustDiet', payload).then(res => {
+    const { status, msg } = res.data;
+    if (status === 200) {
+      ElMessage.success('膳食配置修改成功');
+      editVisible.value = false;
+      init();  // 刷新数据
+    } else {
+      ElMessage.error(msg || '修改失败');
+    }
+  }).catch(() => {
+    ElMessage.error('网络错误，请稍后重试');
+  });
+  // 提交处理逻辑
+  editVisible.value = false
+}
+
+const handleCancel = () => {
+  editVisible.value = false
+}
+// ---------------------重置膳食配置------------------------
 
 // 重置：比如清除某些字段或调用后端接口重置配置
 const handleReset = (row) => {
@@ -144,58 +187,10 @@ const handleReset = (row) => {
     });
   }).catch(() => {
     // 用户取消
-    // ElMessage.info('已取消')
+    ElMessage.info('已取消')
   })
 }
 
-// 控制对话框显示
-const visible = ref(false)
-
-// 表单数据
-
-
-// 取消和确定（方法体可留空）
-const handleCancel = () => {
-  visible.value = false
-}
-
-const handleEditConfirm = () => {
-  // 注意edit和reset的post请求可能需要改用qs，具体等后端实现
-  const payload = {
-    customerDietId: editForm.customerDietId,
-    flavor: editForm.flavor.join(','),
-    restraint: editForm.restraint.join(','),
-    comment: editForm.comment || ''
-  };
-  axios.post('/CustDietController/editCustDiet', payload).then(res => {
-    const { status, msg } = res.data;
-    if (status === 200) {
-      ElMessage.success('膳食配置修改成功');
-      visible.value = false;
-      init();  // 刷新数据
-    } else {
-      ElMessage.error(msg || '修改失败');
-    }
-  }).catch(() => {
-    ElMessage.error('网络错误，请稍后重试');
-  });
-  // 提交处理逻辑
-  visible.value = false
-}
-const handleSearch = () => {
-  currentPage.value = 1; // 搜索时重置为第一页
-  init();
-};
-
-const handleResetSearch = () => {
-  searchName.value = '';
-  currentPage.value = 1; // 重置也跳回第一页
-  init();
-};
-
-// onMounted(() => {
-//   init();
-// });
 </script>
 
 <template>
@@ -351,8 +346,8 @@ const handleResetSearch = () => {
   background-color: white;
   display: flex;
   justify-content: end;
-  //box-sizing: border-box;
-  //padding: 0px 16px 0px 16px;
+  box-sizing: border-box;
+  padding: 0px 16px 0px 16px;
 }
 
 .diet-dialog .el-form-item {

@@ -229,7 +229,7 @@ const notPass = () =>{
         <el-table-column prop="applyUser" label="申请人" width="100" align="center"/>
         <el-table-column prop="applyType" label="申请类型" align="center" :formatter="typeAtter"/>
         <el-table-column prop="reason" label="退住原因" align="center"/>
-        <el-table-column prop="checkOutTime" label="退住时间" align="center"/>
+        <el-table-column prop="checkOutTime" label="申报时间" align="center"/>
         <el-table-column label="操作" width="180" align="center">
           <template #default="scope">
             <el-button type="warning" size="small" plain @click="getCheckOutRe(scope.row)">

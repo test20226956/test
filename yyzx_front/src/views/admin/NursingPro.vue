@@ -163,7 +163,7 @@
 import {
   Plus, Search, RefreshRight, Edit, Delete
 } from '@element-plus/icons-vue'
-import { ElMessageBox } from 'element-plus';
+import { ElMessageBox, ElMessage } from 'element-plus';
 import {ref, inject} from 'vue'
 import qs from 'qs';
 const axios = inject('axios');
@@ -180,17 +180,7 @@ const searchedProject = ref({
 })
 
 // 项目的列表（分页后）
-const nursingProjectList = ref([
-  {
-    nursingProjectId: 1,
-    state: 1,
-    time: 1,
-    name:'1',
-    price:'1',
-    period:'1',
-    description:'1'
-  }
-]);
+const nursingProjectList = ref([]);
 
 // 对话框显示
 const dialogVisible = ref(false);
@@ -250,7 +240,7 @@ let pageSize = ref(5);
 
 // 获取表格内容
 const initTable = () => {
-  let url = `NursingProjectController/showNursingPro?cur=${currentPage.value}&pageSize=${pageSize.value}`;
+  let url = `NursingProjectController/searchNursingPro?pageNum=${currentPage.value}&pageSize=${pageSize.value}`;
   axios.get(url).then(response =>{
     let rb = response.data;
     if(rb.status === 200){
@@ -259,17 +249,31 @@ const initTable = () => {
       nursingProjectList.value = rb.data;
       total.value = rb.total;
     }else{
+      if(rb.msg === '无数据'){
+        ElMessage({message:`无数据`, type:'success'});
+        nursingProjectList.value = rb.data;
+        total.value = rb.total;
+      }
       console.log(rb.msg);
     }
   }).catch(error => {
     console.log(error);
   })
 }
+initTable();
 
 // 重置表格
 const resetTable = () => {
   // 还重置搜索的内容
-
+  searchedProject.value = {
+    nursingProjectId: 1,
+    state: 1,
+    time: 0,
+    name:'',
+    price:'',
+    period:'',
+    description:''
+  };
   total.value = 400;
   currentPage.value = 1;
   pageSize.value = 5;
@@ -280,7 +284,7 @@ const resetTable = () => {
 const searchProjects = () => {
   console.log("搜索项目：");
   console.log(searchedProject.value);
-  let url = `NursingProjectController/searchNursingProPaged?nursingProject=${searchedProject}&cur=${currentPage.value}&pageSize=${pageSize.value}`;
+  let url = `NursingProjectController/searchNursingPro?name=${searchedProject.value.name}&state=${searchedProject.value.state}&cur=${currentPage.value}&pageSize=${pageSize.value}`;
   axios.get(url).then(response => {
     let rb = response.data;
     if(rb.status === 200){
@@ -288,6 +292,11 @@ const searchProjects = () => {
       nursingProjectList.value = rb.data;
       total.value = rb.total;
     }else{
+      if(rb.msg === '无数据'){
+        ElMessage({message:`无数据`, type:'success'});
+        nursingProjectList.value = rb.data;
+        total.value = rb.total;
+      }
       console.log(rb.msg);
     }
   }).catch(error => {
@@ -298,32 +307,34 @@ const searchProjects = () => {
 // 添加和修改的提交
 const submitForm = () => {
   formRef.value.validate((valid) => {
-    if(valid){
-      if(dialogTitle.value === "添加项目"){
+    if (valid) {
+      if (dialogTitle.value === "添加项目") {
         console.log("add project");
         let url = `NursingProjectController/addNursingPro`;
-        axios.post(url, qs.stringify(addedProject.value)).then(response => {
+        axios.post(url, addedProject.value).then(response => {
           let rb = response.data;
-          if(rb.status === 200){
-            ElMessage({message:'添加成功', type:'success'});
+          if (rb.status === 200) {
+            ElMessage({message: '添加成功', type: 'success'});
             resetTable();
             resetForm();
-          }else{
+            dialogVisible.value = false;
+          } else {
             console.log(rb.msg);
           }
         }).catch(error => {
           console.log(error);
         });
-      }else{
+      } else {
         console.log("edit project");
         let url = `NursingProjectController/editNursingPro`;
-        axios.post(url, qs.stringify(addedProject.value)).then(response => {
+        axios.post(url, addedProject.value).then(response => {
           let rb = response.data;
-          if(rb.status === 200){
-            ElMessage({message:'修改成功', type:'success'});
+          if (rb.status === 200) {
+            ElMessage({message: '修改成功', type: 'success'});
             resetTable();
             resetForm();
-          }else{
+            dialogVisible.value = false;
+          } else {
             console.log(rb.msg);
           }
         }).catch(error => {
@@ -331,14 +342,13 @@ const submitForm = () => {
         })
       }
 
-    }else{
+    } else {
       console.log("添加项目时表单验证未通过");
       return false;
     }
   })
+
 }
-
-
 // 打开添加对话框
 const openAdd = () => {
   dialogTitle.value = "添加项目";
@@ -386,9 +396,9 @@ const dialogClose = () => {
 const deleteProject = (row) => {
   ElMessageBox.confirm('确定删除这条表项？')
       .then(() => {
-        let url = `NursingProjectController/deleteNursingPro`;
+        let url = `NursingProjectController/deleteNursingPro?nursingProjectId=${row.nursingProjectId}`;
         console.log(`delete project ${row.nursingProjectId}`);
-        axios.post(url, row.nursingProjectId).then(response => {
+        axios.post(url).then(response => {
           let rb = response.data;
           if(rb.status === 200){
             ElMessage({message:'删除成功', type:'success'});

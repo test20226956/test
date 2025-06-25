@@ -1,8 +1,8 @@
 <script setup>
 import {Plus, Search, RefreshRight, Edit, Delete} from "@element-plus/icons-vue";
-import { ref, reactive, computed, inject } from 'vue'
+import {ref, reactive, computed, inject, onMounted} from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage, ElLoading,  FormItemProps, FormProps } from 'element-plus'
+import {ElMessage, ElLoading, FormItemProps, FormProps, ElMessageBox} from 'element-plus'
 import qs from 'qs';
 
 const route = useRoute();
@@ -11,7 +11,7 @@ const axios = inject('axios');
 
 //页面控制参数
 let currentPage = ref(1);
-let pageSize = ref(3);
+let pageSize = ref(10);
 let total = ref(0);
 const size = ref('default');
 const addDialogVisible = ref(false);
@@ -22,7 +22,7 @@ const labelPosition = ref('right')
 const searchCust = ref({
   name: '',
   startDate: '',
-  state: 0,
+  state: "自理老人",
 });
 
 const floors = ref([2,3,4,5,6]);
@@ -261,9 +261,17 @@ const handleCurrentChange = (val) => {
   init();
   console.log(`current page: ${val}`)
 }
+
+const sexAtter = (row, column, cellValue) =>{
+  return cellValue === 0 ? '男' : '女'
+}
+const bloodAtter = (row, column, cellValue) =>{
+  return cellValue+'型'
+}
 const init = () => {
+  console.log(searchCust.value.state)
   let url = 'CustomerController/showSelfCust';
-  if(searchCust.value.state==1) url = 'CustomerController/showCareCust';
+  if(searchCust.value.state=="护理老人") url = 'CustomerController/showCareCust';
   console.log(url)
   const data = {
     pageNum: currentPage.value,
@@ -273,14 +281,33 @@ const init = () => {
     let rb = response.data;
     if (rb.status == 200) {
       console.log(rb.data)
-      customerList.value = rb.data
+      customerList.value = rb.data.map(item => {
+        return {
+          age: item.age,
+          name: item.customer.name,
+          gender: item.customer.gender,
+          id: item.customer.identity,
+          blood: item.customer.bloodType,
+          tel: item.customer.tel,
+          contact: item.family.name,
+          floor: item.room.floor,
+          room: item.room.roomNumber,
+          bed: item.room.bedCount,
+          checkInTime: item.checkInRecord.checkInTime,
+          checkOutTime: item.checkInRecord.endTime,
+        }
+      })
       total.value = rb.total
     } else {
       alert(rb.msg);
     }
   }).catch(error => console.log(error));
 }
-init();
+
+const handleStateChange = () => {
+  init()
+}
+
 // 根据楼层获取房间号
 const errorRooms = ref('')
 const showRooms = (floor) => {
@@ -427,10 +454,13 @@ const searchCustByName = () => {
     ElMessage.error('请输入搜索信息')
     return
   }
+  const type = searchCust.value.state=="护理老人" ? 1 : 0;
   const data = {
     name: searchCust.value.name,
     startDate: searchCust.value.startDate,
-    state: searchCust.value.state,
+    state: type,
+    pageSize : pageSize.value,
+    pageNum : currentPage.value
   };
   axios.get('CustmerController/searchCust',{ params: data }).then(response => {
     let rb = response.data;
@@ -503,6 +533,10 @@ const deleteRecord = (id) => {
   });
   init() ;
 };
+
+onMounted(() => {
+  handleStateChange()
+})
 </script>
 
 <template>
@@ -547,9 +581,9 @@ const deleteRecord = (id) => {
       <el-row>
         <!--        新增下拉选择框选择老人类型-->
         <el-col :span="2" :offset="1" class="table-search">
-          <el-select v-model="searchCust.state" placeholder="请选择老人类型">
-            <el-option label="自理老人" value=0></el-option>
-            <el-option label="护理老人" value=1></el-option>
+          <el-select v-model="searchCust.state" placeholder="请选择老人类型" @change="handleStateChange" >
+            <el-option label="自理老人" value="自理老人"></el-option>
+            <el-option label="护理老人" value="护理老人"></el-option>
           </el-select>
         </el-col>
         <el-col :span="2" :offset="18" class="table-search">
@@ -565,16 +599,16 @@ const deleteRecord = (id) => {
         <el-table-column type="index" label="#" align="center"/>
         <el-table-column prop="name" label="客户姓名" align="center"/>
         <el-table-column prop="age" label="年龄" width="60" align="center"/>
-        <el-table-column prop="gender" label="性别" width="60" align="center"/>
+        <el-table-column prop="gender" label="性别" width="60" align="center" :formatter="sexAtter"/>
         <el-table-column prop="id" label="身份证号" width="165" align="center"/>
-        <el-table-column prop="blood" label="血型" align="center"/>
+        <el-table-column prop="blood" label="血型" align="center" :formatter="bloodAtter"/>
         <el-table-column prop="contact" label="联系人" align="center"/>
         <el-table-column prop="tel" label="联系电话" align="center"/>
         <el-table-column prop="floor" label="楼层" align="center"/>
         <el-table-column prop="room" label="房间号" align="center"/>
         <el-table-column prop="bed" label="床位号" align="center"/>
         <el-table-column prop="checkInTime" label="入住时间" align="center"/>
-        <el-table-column prop="chheckOutTime" label="合同到期时间" align="center"/>
+        <el-table-column prop="checkOutTime" label="合同到期时间" align="center"/>
         <el-table-column label="操作" width="180" align="center">
           <template #default="scope">
             <el-button type="warning" size="small" plain @click="getCust(scope.row)">
@@ -591,7 +625,7 @@ const deleteRecord = (id) => {
       <el-pagination
           v-model:current-page="currentPage"
           v-model:page-size="pageSize"
-          :page-sizes="[3,5,7]"
+          :page-sizes="[10,5]"
           layout="total, sizes, prev, pager, next, jumper"
           :total="total"
           @size-change="handleSizeChange"

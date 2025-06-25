@@ -85,7 +85,11 @@
           <!-- 主表格列 -->
           <el-table-column prop="nursingLevelId" label="级别编号" width="180" align="center" />
           <el-table-column prop="name" label="名称" width="180" align="center" />
-          <el-table-column prop="state" label="状态" width="180" align="center" />
+          <el-table-column prop="state" label="状态" width="180" align="center" >
+            <template #default="scope">
+              {{ scope.row.state === 0 ? '禁用' : '启用' }}
+            </template>
+          </el-table-column>
           <el-table-column></el-table-column>
           <el-table-column fixed="right" label="操作" width="180" align="center">
             <template v-slot="scope">
@@ -289,105 +293,7 @@ const searchedLevel = ref({
 })
 
 // 级别的列表（分页后）
-const nursingLevelList = ref([{
-  nursingLevelId: 1,
-  name: '一级护理',
-  state: 1,
-  projects: [{
-    nursingProjectId: 101,
-    state: 1,
-    time: 3,
-    name: '基础生命体征监测',
-    price: '30',
-    period: '每天',
-    description: '每日三次测量血压、脉搏、呼吸等'
-  },
-    {
-      nursingProjectId: 102,
-      state: 1,
-      time: 1,
-      name: '洗漱协助',
-      price: '15',
-      period: '每天',
-      description: '协助完成早晚洗漱'
-    },
-    {
-      nursingProjectId: 102,
-      state: 1,
-      time: 1,
-      name: '洗漱协助',
-      price: '15',
-      period: '每天',
-      description: '协助完成早晚洗漱'
-    },
-    {
-      nursingProjectId: 102,
-      state: 1,
-      time: 1,
-      name: '洗漱协助',
-      price: '15',
-      period: '每天',
-      description: '协助完成早晚洗漱'
-    },
-    {
-      nursingProjectId: 102,
-      state: 1,
-      time: 1,
-      name: '洗漱协助',
-      price: '15',
-      period: '每天',
-      description: '协助完成早晚洗漱'
-    },
-    {
-      nursingProjectId: 102,
-      state: 1,
-      time: 1,
-      name: '洗漱协助',
-      price: '15',
-      period: '每天',
-      description: '协助完成早晚洗漱'
-    },
-    {
-      nursingProjectId: 102,
-      state: 1,
-      time: 1,
-      name: '洗漱协助',
-      price: '15',
-      period: '每天',
-      description: '协助完成早晚洗漱'
-    },
-    {
-      nursingProjectId: 102,
-      state: 1,
-      time: 1,
-      name: '洗漱协助',
-      price: '15',
-      period: '每天',
-      description: '协助完成早晚洗漱'
-    },
-  ]
-},
-  {
-    nursingLevelId: 2,
-    name: '二级护理',
-    state: 1,
-    projects: [{
-      nursingProjectId: 201,
-      state: 1,
-      time: 2,
-      name: '床上翻身',
-      price: '20',
-      period: '每4小时',
-      description: '帮助卧床老人定期翻身预防压疮'
-    }]
-  },
-  {
-    nursingLevelId: 3,
-    name: '三级护理',
-    state: 0,
-
-  }
-]);
+const nursingLevelList = ref([]);
 
 // 添加的级别
 const addedLevel = ref({
@@ -446,7 +352,7 @@ const proDialogVisible = ref(false);
 const needFetchUnAdded = ref(true);
 
 // 搜索的已经添加的项目
-const searchAddedProName = ref(null);
+const searchAddedProName = ref('');
 
 // 未添加的项目
 const unAddedProList = ref([]);
@@ -491,7 +397,7 @@ let pageSize = ref(5);
 
 // 获取表格内容
 const initTable = () => {
-  let url = `NursingLevelController/showNursingLevel?cur=${currentPage.value}&pageSize=${pageSize.value}`;
+  let url = `NursingLevelController/searchNursingLevel?pageNum=${currentPage.value}&pageSize=${pageSize.value}`;
   axios.get(url).then(response => {
     let rb = response.data;
     if (rb.status === 200) {
@@ -500,17 +406,25 @@ const initTable = () => {
         type: 'success'
       });
       console.log("获取表格内容");
-
-
       nursingLevelList.value = rb.data;
       total.value = rb.total;
     } else {
+      if(rb.msg === '无数据'){
+        ElMessage({
+          message: `无数据`,
+          type: 'success'
+        });
+        nursingLevelList.value = rb.data;
+        total.value = rb.total;
+      }
       console.log(rb.msg);
     }
   }).catch(error => {
     console.log(error);
   })
 };
+initTable();
+
 
 // 展开时获取对应级别的项目列表
 const handleExpand = (row, expandedRows) => {
@@ -527,12 +441,14 @@ const handleExpand = (row, expandedRows) => {
         // 找到点击行，把数据赋值进去
         if(!nursingLevelList.value[index].projects != []){
           console.log("赋值");
-          let url = `NursingLevelController/showNursingPro?levelId=${nursingLevelList.value[index].nursingLevelId}`;
+          let id = nursingLevelList.value[index].nursingLevelId;
+          let url = `NursingLevelController/showNursingPro?nursingLevelId=${id}`;
+          let projects = [];
           axios.get(url).then(response => {
             let rb = response.data;
             if(rb.status === 200){
               projects = rb.data;
-              console.log("得到的项目：");
+              console.log("得到了项目");
               console.log(projects);
               nursingLevelList.value[index].projects = projects;
             }else{
@@ -541,6 +457,7 @@ const handleExpand = (row, expandedRows) => {
           }).catch(error => {
             console.log(error);
           })
+
         }
       }
     })
@@ -551,6 +468,11 @@ const handleExpand = (row, expandedRows) => {
 
 // 重置表格内容
 const resetTable = () => {
+  // 重置搜索框
+  searchedLevel.value = {
+    name: '',
+    state: 1,
+  }
   total.value = 400;
   currentPage.value = 1;
   pageSize.value = 5;
@@ -562,7 +484,7 @@ const searchLevels = () => {
   console.log('search level');
   console.log(searchedLevel.value);
   let url =
-      `NursingLevelController/searchNursingLevel?name=${searchedLevel.value.name}&state=${searchedLevel.value.state}&cur=${currentPage.value}&pageSize=${pageSize.value}`;
+      `NursingLevelController/searchNursingLevel?name=${searchedLevel.value.name}&state=${searchedLevel.value.state}&pageNum=${currentPage.value}&pageSize=${pageSize.value}`;
   // console.log(url);
   axios.get(url).then(response => {
     let rb = response.data;
@@ -574,6 +496,14 @@ const searchLevels = () => {
       nursingLevelList.value = rb.data;
       total.value = rb.total;
     } else {
+      if(rb.msg === '无数据'){
+        ElMessage({
+          message: `无数据`,
+          type: 'success'
+        });
+        nursingLevelList.value = rb.data;
+        total.value = rb.total;
+      }
       console.log(rb.msg);
     }
   }).catch(error => {
@@ -604,7 +534,7 @@ const submitAdd = () => {
   addFormRef.value.validate((valid) => {
     if (valid) {
       let url = `NursingLevelController/addNursingLevel`;
-      axios.post(url, qs.stringify(addedLevel.value)).then(response => {
+      axios.post(url, addedLevel.value).then(response => {
         let rb = response.data;
         if (rb.status === 200) {
           ElMessage({
@@ -612,6 +542,7 @@ const submitAdd = () => {
             type: 'success'
           });
           resetTable();
+          addDialogVisible.value = false;
         }
       }).catch(error => {
         console.log(error);
@@ -629,6 +560,35 @@ const editDialogOpen = (row) => {
   // 赋值
   editedLevel.value = JSON.parse(JSON.stringify(row));
   console.log(editedLevel.value);
+  // 看一下有没有项目
+  if(editedLevel.value.projects === [] || !editedLevel.value.projects){
+    console.log("级别下项目为空，去找")
+    let projects = [];
+    let url = `NursingLevelController/showNursingPro?nursingLevelId=${row.nursingLevelId}`;
+    axios.get(url).then(response => {
+      let rb = response.data;
+      if(rb.status === 200){
+        projects = rb.data;
+        console.log("找到了")
+        console.log(projects);
+        editedLevel.value.projects = projects;
+        //   也给对应位置的列表赋值
+        nursingLevelList.value.forEach((item, index) => {
+          if(item.nursingLevelId === row.nursingLevelId){
+            nursingLevelList.value[index].projects = projects;
+          }
+        })
+      }else{
+        console.log(rb.msg);
+      }
+    }).catch(error => {
+      console.log(error);
+    })
+    editedLevel.value.projects = projects;
+
+  }
+
+  console.log(editedLevel.value);
   // 每次打开，都重置未添加的项目
   unAddedProList.value = [];
   needFetchUnAdded.value = true;
@@ -639,6 +599,8 @@ const editDialogClose = () => {
   ElMessageBox.confirm('是否关闭该对话框？')
       .then(() => {
         editDialogVisible.value = false;
+        // 重置搜索
+        searchAddedProName.value = '';
         resetEditForm();
       }).catch((error) => {
     console.log(error);
@@ -686,7 +648,7 @@ const resetAddedPro = () => {
 const proDialogOpen = () => {
   if(needFetchUnAdded.value === true){
     // 去给表格赋值
-    let url = `NursingLevelController/showUnNursingPro?levelId=${editedLevel.value.nursingLevelId}`;
+    let url = `NursingLevelController/showUnNursingPro?nursingLevelId=${editedLevel.value.nursingLevelId}`;
     axios.get(url).then(response => {
       let rb = response.data;
       if(rb.status === 200){
@@ -702,65 +664,6 @@ const proDialogOpen = () => {
     }).catch(error => {
       console.log(error);
     });
-
-    // 先赋一个值
-    needFetchUnAdded.value = false;
-    unAddedProList.value = [
-      {
-        nursingProjectId: 201,
-        state: 1,
-        time: 2,
-        name: '床上翻身',
-        price: '20',
-        period: '每4小时',
-        description: '帮助卧床老人定期翻身预防压疮'
-      },
-      {
-        nursingProjectId: 202,
-        state: 1,
-        time: 3,
-        name: '定时服药提醒',
-        price: '10',
-        period: '每天',
-        description: '按时提醒老人服药，确保用药准确'
-      },
-      {
-        nursingProjectId: 203,
-        state: 1,
-        time: 1,
-        name: '测量血糖',
-        price: '25',
-        period: '每天',
-        description: '每日早上进行一次血糖测量'
-      },
-      {
-        nursingProjectId: 204,
-        state: 1,
-        time: 1,
-        name: '更换尿布',
-        price: '30',
-        period: '每晚',
-        description: '为失能老人提供夜间尿布更换服务'
-      },
-      {
-        nursingProjectId: 205,
-        state: 1,
-        time: 2,
-        name: '助浴服务',
-        price: '50',
-        period: '每周两次',
-        description: '协助洗澡，保障清洁与舒适'
-      },
-      {
-        nursingProjectId: 206,
-        state: 1,
-        time: 1,
-        name: '心理疏导',
-        price: '40',
-        period: '每周一次',
-        description: '倾听与交流，缓解老人孤独情绪'
-      }
-    ];
   }else{
     // 直接打开就好了，不需要赋值
     console.log("unadded列表里已有值")
@@ -794,6 +697,8 @@ const proDialogClose = () => {
       .then(() => {
         proDialogVisible.value = false;
         selectedUnAddedProList.value = [];
+      //   重置的添加项目的搜索
+        searchUnAddedProName.value = '';
       }).catch((error) => {
     console.log(error);
   })
@@ -825,28 +730,31 @@ const submitEdit = () => {
       state: editedLevel.value.state,
     };
     const proData = {
-      levelId: editedLevel.value.nursingLevelId,
-      proIds: editedLevel.value.projects.map(p => p.nursingProjectId),
+      nursingLevelId: editedLevel.value.nursingLevelId,
+      projectIds: editedLevel.value.projects.map(p => p.nursingProjectId),
     }
-    let editLevelState = 0;
-    let editProjectsState = 0;
     if(valid){
-      let url1 = `NursingLevelController/editLevel`;
-      axios.post(url1, qs.stringify(levelData)).then(response => {
+      let url1 = `NursingLevelController/editNursingLevel`;
+      axios.post(url1, levelData).then(response => {
         let rb = response.data;
         if(rb.status === 200){
-          editLevelState = 1;
+          console.log("修改级别成功！");
         }else{
-          console.log(msg);
+          console.log(rb.msg);
         }
       }).catch(error => {
         console.log(error);
       });
-      let url2 = `NursingLevelController/editProjects`;
-      axios.post(url2, qs.stringify(proData)).then(response => {
+      let url2 = `NursingLevelController/changeLevelProject`;
+      axios.post(url2, proData).then(response => {
         let rb = response.data;
         if(rb.status === 200){
-          editProjectsState = 1;
+          console.log("修改项目成功！");
+          editDialogVisible.value = false;
+          resetTable();
+          resetEditForm();
+        }else{
+          console.log(rb.msg);
         }
       }).catch(error => {
         console.log(error);
@@ -854,15 +762,6 @@ const submitEdit = () => {
     }else{
       console.log("修改项目时表单验证未通过");
       return false;
-    }
-    if(editLevelState === 1 && editProjectsState === 1){
-      console.log("修改成功！");
-      ElMessage({message:'修改成功', type:'success'});
-      editDialogVisible.value = false;
-      resetTable();
-      resetEditForm();
-    }else{
-      ElMessage({message:"修改失败", type:'error'});
     }
   })
 }
@@ -873,11 +772,12 @@ const deleteLevel = (row) => {
   console.log(row);
   ElMessageBox.confirm('确定删除这个级别？')
       .then(() => {
-        let url = `NursingLevelController/deleteNursingPro`;
-        axios.post(url, row.nursingLevelId).then(response => {
+        let url = `NursingLevelController/deleteNursingLevel?nursingLevelId=${row.nursingLevelId}`;
+        axios.post(url).then(response => {
           let rb = response.data;
           if(rb.status === 200){
             ElMessage({message:'删除成功', type:'success'});
+            resetTable();
           }else{
             console.log(rb.msg);
           }

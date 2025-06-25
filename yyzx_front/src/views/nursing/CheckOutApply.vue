@@ -1,6 +1,150 @@
 <script setup>
-
 import {Delete, Edit, Plus, RefreshRight, Search} from "@element-plus/icons-vue";
+import { ref, reactive, computed, inject } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { ElMessage} from 'element-plus'
+
+const route = useRoute();
+const router = useRouter();
+const axios = inject('axios');
+
+//页面控制参数
+let currentPage = ref(1);
+let pageSize = ref(3);
+let total = ref(0);
+const size = ref('default');
+const dialogVisible = ref(false);
+const reDialogVisible = ref(false);
+const labelPosition = ref('right')
+
+//数据参数
+const searchCust = ref({
+  name: '',
+});
+
+const customerList = ref([])
+const recordList = ref([])
+const recordInfo = ref({
+  name: '',
+  floor: '',
+  age: '',
+  gender: '',
+  room: '',
+  bed: '',
+  applyUser: '',
+  applyTime: '',
+  type: '',
+  reason: '',
+  state: '',
+  id: ''
+})
+const recordFormRules = reactive({
+  applyTime: [
+    { required: true, message: '请选择退住时间', trigger: 'blur' },
+  ],
+  type: [
+    { required: true, message: '请选择退住类型', trigger: 'blur' },
+  ],
+  reason: [
+      { required: true, message: '请输入退住原因', trigger: 'blur' },
+  ],
+})
+
+const handleSizeChange = (val) => {
+  pageSize.value = val;
+  init();
+  console.log(`${val} items per page`)
+}
+const handleCurrentChange = (val) => {
+  currentPage.value = val;
+  init();
+  console.log(`current page: ${val}`)
+}
+
+const init = () => {
+  const userid = sessionStorage.getItem('userId');
+  let url = 'CheckOutController/showCust';
+  const data = {
+    userId : userid,
+    pageNum: currentPage.value,
+    pageSize: pageSize.value
+  };
+  axios.get(url,{ params: data }).then(response => {
+    let rb = response.data;
+    if (rb.status == 200) {
+      console.log(rb.data)
+      customerList.value = rb.data
+      total.value = rb.total
+    } else {
+      alert(rb.msg);
+    }
+  }).catch(error => console.log(error));
+}
+init();
+
+const searchCustByName = () => {
+  if (!searchCust.value.name) {
+    ElMessage.error('请输入搜索信息')
+    return
+  }
+  const data = {
+    name: searchCust.value.name,
+    pageSize : pageSize.value,
+    pageNum : currentPage.value
+  };
+  axios.get('CheckOutController/searchCust',{ params: data }).then(response => {
+    let rb = response.data;
+    if (rb.status == 200) {
+      customerList.value = rb.data;
+      total.value = rb.total
+    }else {
+      alert(rb.msg);
+    }
+  }).catch(error => console.log(error));
+}
+
+const checkOutApp = (row) => {
+  dialogVisible.value = true;
+  recordInfo.value = row;
+  recordInfo.value.applyUser = sessionStorage.getItem('userName');
+}
+
+const getCheckOutApp = (row) => {
+  reDialogVisible.value = true;
+  const url = 'CheckOutController/showCustCheckOutRe';
+  const data = {
+    customerId: row.id
+  };
+  axios.get(url,{ params: data }).then(response => {
+    let rb = response.data;
+    if (rb.status == 200) {
+      recordList.value = rb.data;
+    }else {
+      alert(rb.msg);
+    }
+  }).catch(error => console.log(error));
+}
+
+const addApply = () => {
+  const url = 'CheckOutController/addCheckOutRe';
+  const userid = sessionStorage.getItem('userId');
+  const data = {
+    customerId: recordInfo.value.id,
+    type: recordInfo.value.type,
+    applyTime: recordInfo.value.applyTime,
+    nurseId: userid,
+    reason: recordInfo.value.reason
+  };
+  axios.post(url,data).then(res =>{
+    let data = res.data;
+    if (data.status == 200) {
+      ElMessage.success(data.msg);
+      dialogVisible.value = false;
+    }else {
+      ElMessage.error(data.msg);
+    }
+  })
+}
 </script>
 
 <template>
@@ -11,16 +155,6 @@ import {Delete, Edit, Plus, RefreshRight, Search} from "@element-plus/icons-vue"
         <el-col :offset="2" :span="5" class="search-col">
           <el-form-item label="老人姓名">
             <el-input v-model="searchCust.name" placeholder="请输入老人姓名"></el-input>
-          </el-form-item>
-        </el-col>
-        <el-col :span="5" class="search-col">
-          <el-form-item label="入住日期">
-            <el-date-picker
-                v-model="searchCust.startDate"
-                type="date"
-                placeholder="请选择查询起始日期"
-                :size="size"
-            />
           </el-form-item>
         </el-col>
         <el-col :span="2" class="search-col">
@@ -42,23 +176,6 @@ import {Delete, Edit, Plus, RefreshRight, Search} from "@element-plus/icons-vue"
       </el-row>
     </div>
     <div class="table-container">
-      <el-row>
-        <!--        新增下拉选择框选择老人类型-->
-        <el-col :span="2" :offset="1" class="table-search">
-          <el-select v-model="searchCust.state" placeholder="请选择老人类型">
-            <el-option label="自理老人" value=0></el-option>
-            <el-option label="护理老人" value=1></el-option>
-          </el-select>
-        </el-col>
-        <el-col :span="2" :offset="18" class="table-search">
-          <el-button type="primary" plain @click="addBntVis">
-            <el-icon style="margin-right: 5px;">
-              <Plus/>
-            </el-icon>
-            新增
-          </el-button>
-        </el-col>
-      </el-row>
       <el-table :data="customerList" border style="width: 100%;">
         <el-table-column type="index" label="#" align="center"/>
         <el-table-column prop="name" label="客户姓名" align="center"/>
@@ -129,14 +246,14 @@ import {Delete, Edit, Plus, RefreshRight, Search} from "@element-plus/icons-vue"
     </el-row>
     <el-form
         :model="recordInfo"
-        :rules="addformRules"
+        :rules="recordFormRules"
         :label-position="labelPosition"
         label-width="auto">
       <el-form-item label="申报时间" prop="applyTime">
         <el-date-picker
             v-model="recordInfo.applyTime"
             type="date"
-            placeholder="选择入住时间"
+            placeholder="选择退住时间"
             value-format="YYYY-MM-DD"
             style="width: 60%;"
         />
@@ -150,7 +267,7 @@ import {Delete, Edit, Plus, RefreshRight, Search} from "@element-plus/icons-vue"
       </el-form-item>
       <el-form-item label="退住原因" prop="checkOutTime">
         <el-input
-            v-model="recorInfo.reason"
+            v-model="recordInfo.reason"
             style="width: 240px"
             :rows="2"
             type="textarea"
@@ -163,6 +280,18 @@ import {Delete, Edit, Plus, RefreshRight, Search} from "@element-plus/icons-vue"
         <el-button @click="addApply">提交</el-button>
       </div>
     </template>
+  </el-dialog>
+  <el-dialog title="退住申请记录" v-model="reDialogVisible" width="40%" class="dialog-content">
+    <el-table :data="recordList" border style="width: 100%;">
+      <el-table-column type="index" label="#" align="center"/>
+      <el-table-column prop="name" label="老人姓名" align="center"/>
+      <el-table-column prop="applyUser" label="申请时间" width="100" align="center"/>
+      <el-table-column prop="applyType" label="申请类型" align="center" :formatter="typeAtter"/>
+      <el-table-column prop="reason" label="退住原因" align="center"/>
+      <el-table-column prop="checkUser" label="审核人" align="center"/>
+      <el-table-column prop="checkTime" label="审核时间" align="center"/>
+      <el-table-column prop="checkState" label="审核状态" align="center" :formatter="resultAtter"/>
+    </el-table>
   </el-dialog>
 </template>
 
