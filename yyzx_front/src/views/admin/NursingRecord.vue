@@ -64,7 +64,11 @@
             <el-table-column prop="bed.bedNumber" label="床号" align="center" v-if="!isDetailView"></el-table-column>
             <el-table-column prop="nursingLevel.name" label="护理级别" align="center">
               <template #default="scope">
-                <el-tag :style="{ backgroundColor: '#f0f4f1', color: '#9db7a5', borderColor: '#9db7a5' }">{{scope.row.nursingLevel.name}}</el-tag>
+                <el-tag
+                    :style="scope.row.nursingLevel?.name
+    ? { backgroundColor: '#f0f4f1', color: '#9db7a5', borderColor: '#9db7a5' }
+    : { backgroundColor: '#fcf5eb', color: '#e5a13c', borderColor: '#e5a13c' }"
+                >{{scope.row.nursingLevel?.name ? scope.row.nursingLevel.name : '无级别'}}</el-tag>
               </template>
             </el-table-column>
           </el-table>
@@ -171,12 +175,12 @@
         </div>
         <!-- 表格 -->
         <div class="main-table">
-          <el-table :data="recordList">
+          <el-table :data="recordList" style="overflow-y: auto" max-height="40vh">
             <el-table-column prop="nursingRecord.nursingRecordId" label="记录编号" width="100px" align="center"></el-table-column>
             <el-table-column prop="nursingProject.name" label="项目名称" align="center" width="100px"></el-table-column>
             <el-table-column prop="nursingRecord.count" label="数量" align="center" width="100px" v-if="isDetailView"></el-table-column>
-            <el-table-column prop="nursingRecord.description" label="内容" align="center" width="100px" v-if="isDetailView"></el-table-column>
-            <el-table-column prop="nurse.name" label="护工" align="center" width="100px"></el-table-column>
+            <el-table-column prop="nursingProject.description" label="内容" align="center" width="100px" v-if="isDetailView"></el-table-column>
+            <el-table-column prop="nurse.userName" label="护工" align="center" width="100px"></el-table-column>
             <el-table-column prop="nurse.tel" label="护工手机号" align="center" v-if="isDetailView" width="120px"></el-table-column>
             <el-table-column prop="nursingRecord.time" label="护理时间" align="center" v-if="isDetailView" width="100px"></el-table-column>
             <el-table-column fixed="right" label="操作" align="center">
@@ -207,9 +211,9 @@
 
 <script setup>
 import {
-  UserFilled, List, Search, RefreshRight, ArrowLeft, ArrowRight
+  UserFilled, List, Search, RefreshRight, ArrowLeft, ArrowRight, Delete
 } from '@element-plus/icons-vue'
-import { ElMessageBox } from 'element-plus';
+import { ElMessageBox, ElMessage } from 'element-plus';
 import {ref, inject, computed} from 'vue'
 import qs from 'qs';
 const axios = inject('axios');
@@ -303,59 +307,7 @@ const shortcuts = [
 const nursingLevelList = ref([]);
 
 // 客户列表
-const customerNursingList = ref([
-  {
-    customer: {
-      customerId: 'C001',
-      name: '张三',
-      gender: 0 // 0 表示男，1 表示女
-    },
-    age: 75,
-    room: {
-      roomNumber: '301'
-    },
-    bed: {
-      bedNumber: '1A'
-    },
-    nursingLevel: {
-      name: '一级护理'
-    }
-  },
-  {
-    customer: {
-      customerId: 'C002',
-      name: '李四',
-      gender: 1
-    },
-    age: 82,
-    room: {
-      roomNumber: '302'
-    },
-    bed: {
-      bedNumber: '2B'
-    },
-    nursingLevel: {
-      name: '二级护理'
-    }
-  },
-  {
-    customer: {
-      customerId: 'C003',
-      name: '王五',
-      gender: 0
-    },
-    age: 79,
-    room: {
-      roomNumber: '303'
-    },
-    bed: {
-      bedNumber: '3C'
-    },
-    nursingLevel: {
-      name: '特级护理'
-    }
-  }
-]);
+const customerNursingList = ref([]);
 
 // 选中的客户
 const selectedCustomer = ref(null);
@@ -378,7 +330,7 @@ let recordPageSize = ref(5);
 // 获取客户列表
 const initCustomer = () => {
   // 获取客户列表
-  let url = `CustomerController/showCustomerNursing?pageNum=${customerCurrentPage}&pageSize=${customerPageSize}`;
+  let url = `CustomerController/showCareCust?pageNum=${customerCurrentPage.value}&pageSize=${customerPageSize.value}`;
   axios.get(url).then(response => {
     let rb = response.data;
     if(rb.status === 200){
@@ -397,9 +349,9 @@ const initCustomer = () => {
 // 初始化护理级别
 const initLevel = () => {
   // 获取护理级别列表
-  let url = `NUsingLevelController/showOk`;
+  let url = `NursingLevelController/showOk`;
   axios.get(url).then(response => {
-    let rb = repsonse.data;
+    let rb = response.data;
     if(rb.status === 200){
       console.log("加载护理级别成功！");
       nursingLevelList.value = rb.data;
@@ -407,7 +359,7 @@ const initLevel = () => {
       console.log(rb.msg);
     }
   }).catch(error => {
-    cosnole.log(error);
+    console.log(error);
   })
 }
 // 初始化表格
@@ -415,6 +367,7 @@ const initTable = () => {
   initCustomer();
   initLevel();
 }
+initTable();
 
 const showMore = () => {
   if(isDetailView.value === false){
@@ -435,20 +388,24 @@ const searchCustomers = () => {
 const handleRowClick = (row) => {
   selectedCustomer.value = row;
   console.log(selectedCustomer.value);
+  getRecords();
 }
 
 // 点击过后在记录表格里加载相应数据
 const getRecords = () => {
   console.log(`get records form ${selectedCustomer.value.customer.customerId}`);
-  let url = `/NursingRecordController/showNursingRecord?custId=${selectedCustomer.value.customer.customerId}&cur=${customerCurrentPage}&pageSize=${customerPageSize}`;
+  let url = `/NursingRecordController/showNursingRecord?customerId=${selectedCustomer.value.customer.customerId}&pageNum=${recordCurrentPage.value}&pageSize=${recordPageSize.value}`;
   axios.get(url).then(response => {
     let rb = response.data;
+    console.log(rb.data);
     if(rb.status === 200){
       recordList.value = rb.data;
       ElMessage({message:'表格加载成功', type:'success'});
       console.log("获取表格内容");
+      console.log(recordList.value);
       recordTotal.value = rb.total;
     }else{
+      recordList.value = [];
       console.log(rb.msg)
     }
   }).catch(error => {
@@ -464,9 +421,9 @@ const searchRecords = () => {
 // 删除记录
 const deleteRecord = (row) => {
   ElMessageBox.confirm('确定删除这条记录？')
-  then(() => {
-    let url = `NursingRecordController/deleteNursingRecord`;
-    axios.post(url, row.nursingRecord.nursingRecordId).then(response => {
+      .then(() => {
+    let url = `NursingRecordController/deleteNursingRecord?nursingRecordId=${row.nursingRecord.nursingRecordId}`;
+    axios.post(url).then(response => {
       let rb = response.data;
       if(rb.status === 200){
         ElMessage({message:'删除成功', type:'success'});
@@ -494,12 +451,12 @@ const handleCustomerSizeChange = (val) => {
 // 记录分页
 const handleRecordCurrentChange = (val) => {
   console.log(`current record page is : ${val}`);
-  initRecord();
+  getRecords();
 }
 
 const handleRecordSizeChange = (val) => {
   console.log(`${val} items per record page`);
-  initRecord();
+  getRecords();
 }
 
 </script>

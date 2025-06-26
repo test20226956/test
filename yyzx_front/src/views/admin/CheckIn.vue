@@ -33,10 +33,11 @@ const beds = ref([]);
 const addedCust = ref({
   name: '',
   gender: '',
-  id: '',
-  blood: '',
+  bloodType: '',
+  identity: '',
+  password: '',
   tel: '',
-  type: 0,
+  type: '自理老人',
 });
 
 //表单验证参数
@@ -47,7 +48,7 @@ const addformRules = reactive({
   gender: [
     { required: true, message: '请选择用户性别', trigger: 'blur' },
   ],
-  id: [
+  identity: [
     { required: true, message: '请输入身份证号', trigger: 'blur' },
     {
       validator: (rule, value, callback) => {
@@ -61,10 +62,10 @@ const addformRules = reactive({
       }
     }
   ],
-  state: [
+  type: [
     { required: true, message: '请选择客户状态', trigger: 'blur' },
   ],
-  blood: [
+  bloodType: [
     { required: true, message: '请选择血型', trigger: 'blur' },
   ],
   tel: [
@@ -85,12 +86,12 @@ const addformRules = reactive({
 });
 
 const addFamily = ref({
-  contact: '',
+  name: '',
   tel: '',
-  ralation: '',
+  relation: '',
 });
 const addFamilyRules = reactive({
-  contact: [
+  name: [
     { required: true, message: '请输入联系人', trigger: 'blur' },
   ],
   tel: [
@@ -105,20 +106,20 @@ const addFamilyRules = reactive({
         }
       }
   ],
-  ralation: [
+  relation: [
     { required: true, message: '请输入关系', trigger: 'blur' },
   ]
 });
 
 const addedCheckReCord = ref({
   checkInTime: '',
-  checkOutTime: '',
+  endTime: '',
 });
 const addCheckReCordRules = reactive({
   checkInTime: [
     { required: true, message: '请输入入住时间', trigger: 'blur' },
   ],
-  checkOutTime: [
+  endTime: [
     { required: true, message: '请输入合同到期时间', trigger: 'blur' },
     //checkOutTime要晚于checkInTime
     {
@@ -155,10 +156,12 @@ const addBedRules = reactive({
 const editedCust = ref({
   name: '',
   gender: '',
-  id: '',
-  blood: '',
+  customerId: '',
+  bloodType: '',
+  identity: '',
+  password: '',
   tel: '',
-  type: 0,
+  type: '',
 });
 
 const editformRules = reactive({
@@ -197,9 +200,6 @@ const editformRules = reactive({
         } else if (value.length != 11) {
           callback(new Error('电话号码长度为11位'));
         }
-        else if (!/^1[3456789]\d{8}$/.test(value)) {
-          callback(new Error('请输入正确的联系电话'));
-        }
         else {
           callback();
         }
@@ -234,22 +234,7 @@ const editRecordRules = reactive({
 })
 
 //创建客户列表供表格展示（要包括姓名、年龄、性别、身份证号、血型、联系人、联系电话、楼层、房间号、入住时间、合同到期时间）
-const customerList = ref([
-    {
-      name: '张三',
-      gender: '男',
-      id: '110101199001011234',
-      blood: 'A型',
-      tel: '13812345678',
-      contact: '张三',
-      contel: '13812345678',
-      floor: '1',
-      room: '101',
-      bed: '1',
-      checkInTime: '2021-01-01',
-      checkOutTime: '2021-01-01',
-    }
-]);
+const customerList = ref([]);
 
 const handleSizeChange = (val) => {
   pageSize.value = val;
@@ -262,17 +247,12 @@ const handleCurrentChange = (val) => {
   console.log(`current page: ${val}`)
 }
 
-const sexAtter = (row, column, cellValue) =>{
-  return cellValue === 0 ? '男' : '女'
-}
 const bloodAtter = (row, column, cellValue) =>{
   return cellValue+'型'
 }
 const init = () => {
-  console.log(searchCust.value.state)
   let url = 'CustomerController/showSelfCust';
   if(searchCust.value.state=="护理老人") url = 'CustomerController/showCareCust';
-  console.log(url)
   const data = {
     pageNum: currentPage.value,
     pageSize: pageSize.value
@@ -280,12 +260,13 @@ const init = () => {
   axios.get(url,{ params: data }).then(response => {
     let rb = response.data;
     if (rb.status == 200) {
-      console.log(rb.data)
       customerList.value = rb.data.map(item => {
         return {
+          customerId: item.customer.customerId,
           age: item.age,
           name: item.customer.name,
-          gender: item.customer.gender,
+          gender: item.customer.gender === 0 ? '男' : '女',
+          type: item.customer.type === '1' ? '护理老人' : '自理老人',
           id: item.customer.identity,
           blood: item.customer.bloodType,
           tel: item.customer.tel,
@@ -310,7 +291,7 @@ const handleStateChange = () => {
 
 // 根据楼层获取房间号
 const errorRooms = ref('')
-const showRooms = (floor) => {
+const showRoom = (floor) => {
   let data = {
     floor: floor
   };
@@ -319,32 +300,9 @@ const showRooms = (floor) => {
     if (rb.status == 200) {
       rooms.value = rb.data
     }else {
-      alert(rb.msg);
+      ElMessage.error(rb.msg);
     }
   }).catch(error => console.log(error));
-}
-const showRoom = async (floor) => {
-  if (!floor) return
-  try {
-    errorRooms.value = ''
-    // 模拟后端请求
-    const response = await new Promise(resolve => {
-      setTimeout(() => {
-        const rooms = []
-        for (let i = 1; i <= 10; i++) {
-          rooms.push({
-            id: `${floor}${i}`,
-            roomNumber: `R${floor}-${i}`
-          })
-        }
-        resolve(rooms)
-      }, 500)
-    })
-    rooms.value = response
-  } catch (error) {
-    errorRooms.value = '获取房间列表失败，请稍后重试'
-    ElMessage.error(errorRooms.value)
-  }
 }
 
 // 楼层选择变化处理
@@ -356,42 +314,18 @@ const handleFloorChange = (value) => {
   }
 }
 
-const errorBeds = ref('')
-const showBeds = (roomId) => {
+const showBed = (room) => {
   const data = {
-    roomId : roomId,
+    roomId : room.roomId,
   }
-  axios.get('BedController/showFreeBed',{ params: data }).then(response => {
+  axios.get('BedController/searchFreeBed',{ params: data }).then(response => {
     let rb = response.data;
     if (rb.status == 200) {
       beds.value = rb.data;
     }else {
-      alert(rb.msg);
+      ElMessage.error(rb.msg);
     }
   }).catch(error => console.log(error))
-}
-const showBed = async (roomId) => {
-  if (!roomId) return
-  try {
-    errorBeds.value = ''
-    // 模拟后端请求
-    const response = await new Promise(resolve => {
-      setTimeout(() => {
-        const rooms = []
-        for (let i = 1; i <= 10; i++) {
-          rooms.push({
-            id: i,
-            bedNumber: `R${roomId}-${i}`
-          })
-        }
-        resolve(beds)
-      }, 500)
-    })
-    rooms.value = response
-  } catch (error) {
-    errorRooms.value = '获取房间列表失败，请稍后重试'
-    ElMessage.error(errorRooms.value)
-  }
 }
 const handleRoomChange = (value) => {
   if (value) {
@@ -404,47 +338,64 @@ const handleRoomChange = (value) => {
 const addBntVis = () => {
   addDialogVisible.value=true;
   addedCust.value = {};
-  addFamily.value = {};
+  addedCust.value.type = '自理老人'
   addBed.value = {};
   addedCheckReCord.value = {};
 }
 const addCust = () => {
+  addedCust.value.type = addedCust.value.type === '护理老人' ? '1' : '0';
+  addedCust.value.gender = addedCust.value.gender === '男' ? 0 : 1;
+  //密码为身份证号后六位
+  addedCust.value.password = addedCust.value.identity.substring(addedCust.value.identity.length - 6);
   //验证三个表单的都不存在空数据
   const data = {
-    cutmer: addedCust.value,
+    customer: addedCust.value,
     family: addFamily.value,
-    checkInRecord: addedCheckReCord.value,
+    checkInRecord:{
+      checkInTime: addedCheckReCord.value.checkInTime,
+      endTime: addedCheckReCord.value.endTime,
+    },
     room:{
       floor: addBed.value.floor,
-      room: addBed.value.room,
+      roomNumber: addBed.value.room.roomNumber,
     },
-    bed: addBed.value.bed,
+    bed:{
+      bedNumber: addBed.value.bed.bedNumber,
+    },
+    bedRecord: {},
   };
   axios.post("/CustomerController/addCust", data).then((res) => {
     let rb = res.data;
     if (rb.status === 200) {
       ElMessage({ message: "添加成功", type: "success" });
       init();
+      addDialogVisible.value = false;
     } else {
-      console.log(rb.msg);
+      addedCust.value.type = addedCust.value.type === '1' ? '护理老人' : '自理老人';
+      addedCust.value.gender = addedCust.value.gender === 0 ? '男' : '女';
+      ElMessage.error(rb.msg);
+      console.log(rb.msg)
     }
   })
 }
 
 const searchCustById = () => {
-  if (!addedCust.value.id) {
+  if (!addedCust.value.identity) {
     ElMessage.error('请输入身份证号')
     return
   }
   const data = {
-    identity: addedCust.value.id
+    identity: addedCust.value.identity
   };
-  axios.get('CustmerController/showCustByIdentity',{ params: data }).then(response => {
+  axios.get('CustomerController/searchCustByIdentity',{ params: data }).then(response => {
     let rb = response.data;
+    console.log(rb.data)
     if (rb.status == 200) {
       addedCust.value = rb.data
+      addedCust.value.gender = addedCust.value.gender === 0 ? '男' : '女'
+      addedCust.value.type = addedCust.value.type === '1' ? '护理老人' : '自理老人'
     } else {
-      alert(rb.msg);
+      ElMessage.error(rb.msg);
     }
   }).catch(error => console.log(error));
 }
@@ -455,17 +406,39 @@ const searchCustByName = () => {
     return
   }
   const type = searchCust.value.state=="护理老人" ? 1 : 0;
+  //将时间转为字符串“YYYY-mm-dd”的形式，如果月份和日期是一位数自动补0
+  const year = searchCust.value.startDate.getFullYear()
+  const month = String(searchCust.value.startDate.getMonth() + 1).padStart(2, '0')
+  const day = String(searchCust.value.startDate.getDate()).padStart(2, '0')
+  const startDate = `${year}-${month}-${day}`
+  console.log(startDate)
   const data = {
     name: searchCust.value.name,
-    startDate: searchCust.value.startDate,
-    state: type,
+    checkInTime: startDate,
+    type: type,
     pageSize : pageSize.value,
     pageNum : currentPage.value
   };
-  axios.get('CustmerController/searchCust',{ params: data }).then(response => {
+  axios.get('CustomerController/searchCust',{ params: data }).then(response => {
     let rb = response.data;
     if (rb.status == 200) {
-      customerList.value = rb.data;
+      customerList.value = rb.data.map(item => {
+        return {
+          age: item.age,
+          name: item.customer.name,
+          gender: item.customer.gender === 0 ? '男' : '女',
+          type: item.customer.type === 1 ? '护理老人' : '自理老人',
+          id: item.customer.identity,
+          blood: item.customer.bloodType,
+          tel: item.customer.tel,
+          contact: item.family.name,
+          floor: item.room.floor,
+          room: item.room.roomNumber,
+          bed: item.room.bedCount,
+          checkInTime: item.checkInRecord.checkInTime,
+          checkOutTime: item.checkInRecord.endTime,
+        }
+      })
       total.value = rb.total
     }else {
       alert(rb.msg);
@@ -478,23 +451,33 @@ const getCust = (row) => {
   editedRecord.value.checkInTime = row.checkInTime;
   editedRecord.value.checkOutTime = row.checkOutTime;
   editedCust.value.name = row.name;
+  editedCust.value.customerId = row.customerId;
   editedCust.value.gender = row.gender;
   editedCust.value.tel = row.tel;
-  editedCust.value.id = row.id;
-  editedCust.value.blood = row.blood;
+  editedCust.value.identity = row.id;
+  editedCust.value.type = row.type;
+  editedCust.value.bloodType = row.blood;
+  editedCust.value.password = row.password;
   editDialogVisible.value = true;
 }
 
 const edit = () => {
+  editedCust.value.type = editedCust.value.type === '护理老人' ? '1' : '0';
+  editedCust.value.gender = editedCust.value.gender === '男' ? 0 : 1;
   const data = {
-    customer : editedCust.value,
+    data : editedCust.value,
     endTime : editedRecord.value.checkOutTime,
   };
-  axios.post("/CustmerController/editCust",data).then(response => {
+  console.log(data)
+  axios.post("/CustomerController/editCust",data).then(response => {
     let rb = response.data;
     if (rb.status === 200) {
       ElMessage.success("修改成功");
+      editDialogVisible.value = false;
+      init();
     }else{
+      editedCust.value.type = editedCust.value.type === '1' ? '护理老人' : '自理老人';
+      editedCust.value.gender = editedCust.value.gender === 0 ? '男' : '女';
       ElMessage.error(rb.msg);
     }
   });
@@ -509,7 +492,7 @@ const confirmDelete = (row) => {
     type: "warning",
   })
     .then(() => {
-      deleteRecord(row.id);
+      deleteRecord(row.customerId);
     })
     .catch(() => {
       ElMessage({
@@ -520,18 +503,18 @@ const confirmDelete = (row) => {
 }
 
 const deleteRecord = (id) => {
-  const data = {
-    customerId: id,
-  };
-  axios.post("CustomerController/deleteCust", data).then((response) => {
+  console.log(id)
+  let url = `CustomerController/deleteCust?customerId=${id}`;
+  axios.post(url).then((response) => {
     let rb = response.data;
+    console.log(rb)
     if (rb.status == 200) {
       ElMessage("删除成功");
+      init();
     }else{
       ElMessage(rb.msg);
     }
   });
-  init() ;
 };
 
 onMounted(() => {
@@ -599,7 +582,7 @@ onMounted(() => {
         <el-table-column type="index" label="#" align="center"/>
         <el-table-column prop="name" label="客户姓名" align="center"/>
         <el-table-column prop="age" label="年龄" width="60" align="center"/>
-        <el-table-column prop="gender" label="性别" width="60" align="center" :formatter="sexAtter"/>
+        <el-table-column prop="gender" label="性别" width="60" align="center" />
         <el-table-column prop="id" label="身份证号" width="165" align="center"/>
         <el-table-column prop="blood" label="血型" align="center" :formatter="bloodAtter"/>
         <el-table-column prop="contact" label="联系人" align="center"/>
@@ -633,10 +616,7 @@ onMounted(() => {
       />
     </div>
   </div>
-  <el-drawer
-      v-model="addDialogVisible"
-      title="添加客户"
-      size="40%">
+  <el-drawer v-model="addDialogVisible" v-if="addDialogVisible" title="添加客户" size="40%">
     <el-form
         :model="addedCust"
         :rules="addformRules"
@@ -647,8 +627,8 @@ onMounted(() => {
       </el-form-item>
       <el-row>
         <el-col :span="12">
-          <el-form-item label="身份证号" prop="id">
-            <el-input v-model="addedCust.id" placeholder="请输入身份证号"></el-input>
+          <el-form-item label="身份证号" prop="identity">
+            <el-input v-model="addedCust.identity" placeholder="请输入身份证号"></el-input>
           </el-form-item>
         </el-col>
         <el-col :span="12">
@@ -667,18 +647,18 @@ onMounted(() => {
           <el-option label="女" value="女"></el-option>
         </el-select>
       </el-form-item>
-      <el-form-item label="血型" prop="blood">
-        <el-select v-model="addedCust.blood" placeholder="请选择血型" style="width: 60%;">
-          <el-option label="A型" value="A型"></el-option>
-          <el-option label="B型" value="B型"></el-option>
-          <el-option label="O型" value="O型"></el-option>
-          <el-option label="AB型" value="AB型"></el-option>
+      <el-form-item label="血型" prop="bloodType">
+        <el-select v-model="addedCust.bloodType" placeholder="请选择血型" style="width: 60%;">
+          <el-option label="A型" value="A"></el-option>
+          <el-option label="B型" value="B"></el-option>
+          <el-option label="O型" value="O"></el-option>
+          <el-option label="AB型" value="AB"></el-option>
         </el-select>
       </el-form-item>
       <el-form-item label="老人类型" prop="type">
         <el-select v-model="addedCust.type" placeholder="请选择老人类型" style="width: 60%;">
-          <el-option label="自理老人" value="0"></el-option>
-          <el-option label="护理老人" value="1"></el-option>
+          <el-option label="自理老人" value="自理老人"></el-option>
+          <el-option label="护理老人" value="护理老人"></el-option>
         </el-select>
       </el-form-item>
       <el-form-item label="联系电话" prop="tel">
@@ -690,14 +670,14 @@ onMounted(() => {
         :rules="addFamilyRules"
         :label-position="labelPosition"
         label-width="auto">
-      <el-form-item label="联系人" prop="contact">
-        <el-input v-model="addFamily.contact" placeholder="请输入联系人" style="width: 60%;"></el-input>
+      <el-form-item label="联系人" prop="name">
+        <el-input v-model="addFamily.name" placeholder="请输入联系人" style="width: 60%;"></el-input>
       </el-form-item>
       <el-form-item label="家属电话" prop="tel">
         <el-input v-model="addFamily.tel" placeholder="请输入家属电话" style="width: 60%;"></el-input>
       </el-form-item>
-      <el-form-item label="关系" prop="ralation">
-        <el-input v-model="addFamily.ralation" placeholder="请输入关系" style="width: 60%;"></el-input>
+      <el-form-item label="关系" prop="relation">
+        <el-input v-model="addFamily.relation" placeholder="请输入关系" style="width: 60%;"></el-input>
       </el-form-item>
     </el-form>
     <el-form
@@ -725,6 +705,7 @@ onMounted(() => {
       <el-form-item label="房间号" prop="room">
         <el-select
             v-model="addBed.room"
+            value-key="roomId"
             placeholder="请选择房间号"
             @change="handleRoomChange"
             :disabled="!addBed.floor"
@@ -732,9 +713,9 @@ onMounted(() => {
         >
           <el-option
               v-for="room in rooms"
-              :key="room.id"
+              :key="room.roomId"
               :label="room.roomNumber"
-              :value="room.id"
+              :value="room"
           />
         </el-select>
         <div v-if="errorRooms" class="error-message">{{ errorRooms }}</div>
@@ -742,15 +723,16 @@ onMounted(() => {
       <el-form-item label="床位编号" prop="bed" >
         <el-select
             v-model="addBed.bed"
+            value-key="bedId"
             placeholder="请选择床位号"
             :disabled="!addBed.room"
             style="width: 60%;"
         >
           <el-option
               v-for="bed in beds"
-              :key="bed.id"
+              :key="bed.bedId"
               :label="bed.bedNumber"
-              :value="bed.id"
+              :value="bed"
           />
         </el-select>
       </el-form-item>
@@ -769,9 +751,9 @@ onMounted(() => {
             style="width: 60%;"
         />
       </el-form-item>
-      <el-form-item label="到期时间" prop="checkOutTime">
+      <el-form-item label="到期时间" prop="endTime">
         <el-date-picker
-            v-model="addedCheckReCord.checkOutTime"
+            v-model="addedCheckReCord.endTime"
             type="date"
             placeholder="选择合同到期时间"
             value-format="YYYY-MM-DD"
@@ -787,7 +769,7 @@ onMounted(() => {
     </template>
   </el-drawer>
 <!--  添加一个弹窗用于完成用户信息的修改，在点击修改按钮时自动传入该行的老人信息用于修改-->
-  <el-dialog v-model="editDialogVisible" title="编辑老人信息" width="40%">
+  <el-dialog v-model="editDialogVisible" title="编辑老人信息" width="40%" v-if="editDialogVisible">
     <el-form
         :model="editedCust"
         :rules="editformRules"
@@ -797,7 +779,7 @@ onMounted(() => {
         <el-input v-model="editedCust.name" placeholder="请输入姓名" disabled></el-input>
       </el-form-item>
       <el-form-item label="身份证号" prop="id" style="width: 60%;">
-        <el-input v-model="editedCust.id" placeholder="请输入身份证号" disabled></el-input>
+        <el-input v-model="editedCust.identity" placeholder="请输入身份证号" disabled></el-input>
       </el-form-item>
       <el-form-item label="性别" prop="gender"style="width: 60%;">
         <el-select v-model="editedCust.gender" placeholder="请选择性别">
@@ -806,17 +788,17 @@ onMounted(() => {
         </el-select>
       </el-form-item>
       <el-form-item label="血型" prop="blood">
-        <el-select v-model="editedCust.blood" placeholder="请选择血型" style="width: 60%;">
-          <el-option label="A型" value="A型"></el-option>
-          <el-option label="B型" value="B型"></el-option>
-          <el-option label="O型" value="O型"></el-option>
-          <el-option label="AB型" value="AB型"></el-option>
+        <el-select v-model="editedCust.bloodType" placeholder="请选择血型" style="width: 60%;">
+          <el-option label="A型" value="A"></el-option>
+          <el-option label="B型" value="B"></el-option>
+          <el-option label="O型" value="O"></el-option>
+          <el-option label="AB型" value="AB"></el-option>
         </el-select>
       </el-form-item>
       <el-form-item label="老人类型" prop="type">
         <el-select v-model="editedCust.type" placeholder="请选择老人类型" style="width: 60%;">
-          <el-option label="自理老人" value="0"></el-option>
-          <el-option label="护理老人" value="1"></el-option>
+          <el-option label="自理老人" value="自理老人"></el-option>
+          <el-option label="护理老人" value="护理老人"></el-option>
         </el-select>
       </el-form-item>
       <el-form-item label="联系电话" prop="tel">
@@ -848,7 +830,11 @@ onMounted(() => {
         />
       </el-form-item>
     </el-form>
-    <el-button type="primary" @click="edit">添加</el-button>
+    <template #footer>
+      <div class="dialog-footer">
+        <el-button type="primary" @click="edit">修改</el-button>
+      </div>
+    </template>
   </el-dialog>
 </template>
 
