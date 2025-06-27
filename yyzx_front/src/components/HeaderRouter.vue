@@ -8,12 +8,12 @@ const breadcrumbs =  computed(()=>{
   return route.meta.breadcrumb || ['首页']
 })
 const isCollapse = ref(true)
-const isCo = () =>{
-  if(isCollapse.value==false) isCollapse.value=true;
-  else isCollapse.value=false;
+const isCo = () => {
+  if (isCollapse.value == false) isCollapse.value = true;
+  else isCollapse.value = false;
 }
 
-defineExpose({ isCollapse })
+defineExpose({isCollapse})
 </script>
 
 <template>
@@ -28,7 +28,7 @@ defineExpose({ isCollapse })
       <!-- 面包屑靠左 -->
       <div class="breadcrumb_area">
         <el-icon @click="isCo" class="icon" size="25">
-          <Expand />
+          <Expand/>
         </el-icon>
 
         <el-breadcrumb separator="/" class="center_breadcrumb">
@@ -71,6 +71,7 @@ defineExpose({ isCollapse })
 .left_icon {
   width: 200px;
 }
+
 .left_icon img {
   height: 40px;
 }

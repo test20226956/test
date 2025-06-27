@@ -1,7 +1,7 @@
 <script setup>
 import { ref, reactive, computed, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage, ElLoading,  FormItemProps, FormProps } from 'element-plus'
+import {ElMessage, ElLoading, FormItemProps, FormProps, ElMessageBox} from 'element-plus'
 import {Delete, Edit, Plus, RefreshRight, Search} from "@element-plus/icons-vue";
 
 const route = useRoute()
@@ -10,16 +10,16 @@ const axios = inject('axios');
 
 //页面控制参数
 let currentPage = ref(1);
-let pageSize = ref(3);
+let pageSize = ref(5);
 let total = ref(0);
 const size = ref('default');
 const addDialogVisible = ref(false);
 const editDialogVisible = ref(false);
 const labelPosition = ref('right')
 
-const searchUser = reactive({
+const searchUser = ref({
   name: '',
-  account: '',
+  employmentDate: '',
   type: '',
 });
 const userList = ref([
@@ -38,14 +38,14 @@ const userList = ref([
 const addedUser = ref({
   account: '',
   password: '',
-  name: '',
+  userName: '',
   tel: '',
   email: '',
-  empolymentDate: '',
-  type: 0,
+  employmentDate: '',
+  type: 1,
 });
 const addformRules = reactive({
-  name: [
+  userName: [
     { required: true, message: '请输入客户姓名', trigger: 'blur' },
   ],
   account: [
@@ -82,7 +82,7 @@ const addformRules = reactive({
       }
     }
   ],
-  emaill: [
+  email: [
     { required: true, message: '请输入邮箱', trigger: 'blur' },
     {
       validator: (rule, value, callback) => {
@@ -94,10 +94,7 @@ const addformRules = reactive({
       }
     }
   ],
-  type: [
-    { required: true, message: '请选择用户类型', trigger: 'blur' },
-  ],
-  empolymentDate: [
+  employmentDate: [
       { required: true, message: '请选择入职时间', trigger: 'blur' },
   ]
 });
@@ -105,14 +102,14 @@ const addformRules = reactive({
 const editedUser = ref({
   account: '',
   password: '',
-  name: '',
+  userName: '',
   tel: '',
   email: '',
-  empolymentDate: '',
-  type: 0,
+  employmentDate: '',
+  type: 1,
 });
 const editformRules = reactive({
-  name: [
+  userName: [
     { required: true, message: '请输入客户姓名', trigger: 'blur' },
   ],
   account: [
@@ -170,12 +167,13 @@ const editformRules = reactive({
 });
 const handleSizeChange = (val) => {
   pageSize.value = val;
-  init();
+  searchUserByName();
   console.log(`${val} items per page`)
 }
 const handleCurrentChange = (val) => {
+  console.log('current page:', val);
   currentPage.value = val;
-  init();
+  searchUserByName();
   console.log(`current page: ${val}`)
 }
 const init = () => {
@@ -186,43 +184,46 @@ const init = () => {
   };
   axios.get(url,{ params: data }).then(response => {
     let rb = response.data;
-    console.log(rb)
+    console.log(rb.data)
     if (rb.status == 200) {
       userList.value = rb.data
       total.value = rb.total;
     } else {
-      alert(rb.msg);
+      ElMessage.error(rb.msg);
     }
   }).catch(error => console.log(error));
 }
 init();
 const searchUserByName = () => {
-  axios.get('/UserController/searchUser', {
-    params: {
-      name: searchUser.name,
-      account: searchUser.account,
-      type: searchUser.type,
+  if(searchUser.value.name == ''&& searchUser.value.employmentDate == '') init();
+  else{
+    const data = {
+      userName: searchUser.value.name,
+      employmentDate: searchUser.value.employmentDate,
       currentPage: currentPage.value,
       pageSize: pageSize.value
-    }
-  }).then(res => {
-    userList.value = res.data.data;
-    total.value = res.data.total;
-  }).catch(err => {
-    ElMessage.error(err.message);
-  })
+    };
+    axios.get('/UserController/searchUser', {params: data}).then(res => {
+      userList.value = res.data.data;
+      total.value = res.data.total;
+    }).catch(err => {
+      ElMessage.error(err.message);
+    })
+  }
 }
 const addBntVis = () => {
   addDialogVisible.value=true;
- addedUser.value = {};
+  addedUser.value = {};
 }
 const addUser = () => {
-  axios.post('/UserController/addUser',{
-
-  }).then(res => {
+  addedUser.value.type = 1;
+  axios.post('/UserController/addUser',addedUser.value).then(res => {
     if (res.data.status == 200) {
       ElMessage.success(res.data.msg);
       addDialogVisible.value = false;
+      init();
+    }else {
+      ElMessage.error(res.data.msg);
     }
   })
 }
@@ -234,7 +235,7 @@ const confirmDelete = (row) => {
     type: "warning",
   })
       .then(() => {
-        deleteRecord(row.id);
+        deleteRecord(row.userId);
       })
       .catch(() => {
         ElMessage({
@@ -244,11 +245,8 @@ const confirmDelete = (row) => {
       });
 }
 const deleteRecord = (id) => {
-  axios.get('/UserController/deleteUser', {
-    params: {
-      id: id
-    }
-  }).then(res => {
+  let url = `/UserController/deleteUser?userId=${id}`;
+  axios.post( url).then(res => {
     if (res.data.status == 200) {
       ElMessage.success(res.data.msg);
       init();
@@ -260,12 +258,13 @@ const editBntVis = (row) => {
   editedUser.value = row;
 }
 const editUser = () => {
-  axios.post('/UserController/editUser',{
-
-  }).then(res => {
+  axios.post('/UserController/editUser',editedUser.value).then(res => {
     if (res.data.status == 200) {
       ElMessage.success(res.data.msg);
       editDialogVisible.value = false;
+      searchUserByName();
+    }else{
+      ElMessage.error(res.data.msg);
     }
   })
 }
@@ -282,8 +281,14 @@ const editUser = () => {
           </el-form-item>
         </el-col>
         <el-col :span="5" class="search-col">
-          <el-form-item label="用户编号">
-            <el-input v-model="searchUser.account" placeholder="请输入用户编号"></el-input>
+          <el-form-item label="入职日期">
+            <el-date-picker
+                v-model="searchUser.employmentDate"
+                type="date"
+                placeholder="请选择查询起始日期"
+                :size="size"
+                value-format="YYYY-MM-DD"
+            />
           </el-form-item>
         </el-col>
         <el-col :span="2" class="search-col">
@@ -338,7 +343,7 @@ const editUser = () => {
       <el-pagination
           v-model:current-page="currentPage"
           v-model:page-size="pageSize"
-          :page-sizes="[3,5,7]"
+          :page-sizes="[10,5]"
           layout="total, sizes, prev, pager, next, jumper"
           :total="total"
           @size-change="handleSizeChange"
@@ -353,7 +358,7 @@ const editUser = () => {
         :label-position="labelPosition"
         label-width="auto">
       <el-form-item label="姓名" prop="name"style="width: 60%;">
-        <el-input v-model="editedUser.name" placeholder="请输入姓名" disabled></el-input>
+        <el-input v-model="editedUser.userName" placeholder="请输入姓名" disabled></el-input>
       </el-form-item>
       <el-form-item label="员工编号" prop="account" style="width: 60%;">
         <el-input v-model="editedUser.account" placeholder="请输入员工编号" disabled></el-input>
@@ -367,13 +372,14 @@ const editUser = () => {
       <el-form-item label="邮箱" prop="email">
         <el-input v-model="editedUser.email" placeholder="请输入邮箱" style="width: 60%;"></el-input>
       </el-form-item>
-      <el-form-item label="到期时间" prop="checkOutTime">
+      <el-form-item label="入职时间" prop="checkOutTime" >
         <el-date-picker
             v-model="editedUser.empolymentDate"
             type="date"
             placeholder="选择合同到期时间"
             value-format="YYYY-MM-DD"
             style="width: 60%;"
+            disabled
         />
       </el-form-item>
     </el-form>
@@ -385,11 +391,11 @@ const editUser = () => {
         :rules="addformRules"
         :label-position="labelPosition"
         label-width="auto">
-      <el-form-item label="姓名" prop="name"style="width: 60%;">
-        <el-input v-model="addedUser.name" placeholder="请输入姓名" disabled></el-input>
+      <el-form-item label="姓名" prop="userName"style="width: 60%;">
+        <el-input v-model="addedUser.userName" placeholder="请输入姓名"></el-input>
       </el-form-item>
       <el-form-item label="员工编号" prop="account" style="width: 60%;">
-        <el-input v-model="addedUser.account" placeholder="请输入员工编号" disabled></el-input>
+        <el-input v-model="addedUser.account" placeholder="请输入员工编号"></el-input>
       </el-form-item>
       <el-form-item label="账号密码" prop="password">
         <el-input v-model="addedUser.password" placeholder="请输入账号密码" style="width: 60%;"></el-input>
@@ -400,9 +406,9 @@ const editUser = () => {
       <el-form-item label="邮箱" prop="email">
         <el-input v-model="addedUser.email" placeholder="请输入邮箱" style="width: 60%;"></el-input>
       </el-form-item>
-      <el-form-item label="到期时间" prop="checkOutTime">
+      <el-form-item label="入职时间" >
         <el-date-picker
-            v-model="addedUser.empolymentDate"
+            v-model="addedUser.employmentDate"
             type="date"
             placeholder="选择合同到期时间"
             value-format="YYYY-MM-DD"

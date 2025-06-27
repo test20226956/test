@@ -17,6 +17,7 @@ const dialogVisible = ref(false);
 const reDialogVisible = ref(false);
 const labelPosition = ref('right')
 
+const userId = ref(8);
 //数据参数
 const searchCust = ref({
   name: '',
@@ -62,7 +63,9 @@ const handleCurrentChange = (val) => {
 }
 
 const init = () => {
-  const userid = sessionStorage.getItem('userId');
+  //const userid = sessionStorage.getItem('userId');
+  const userid = userId.value;
+  console.log(userid)
   let url = 'CheckOutController/showCust';
   const data = {
     userId : userid,
@@ -76,7 +79,7 @@ const init = () => {
       customerList.value = rb.data
       total.value = rb.total
     } else {
-      alert(rb.msg);
+      ElMessage.error(rb.msg);
     }
   }).catch(error => console.log(error));
 }

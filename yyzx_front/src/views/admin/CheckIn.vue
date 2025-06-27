@@ -238,12 +238,12 @@ const customerList = ref([]);
 
 const handleSizeChange = (val) => {
   pageSize.value = val;
-  init();
+  searchCustByName() ;
   console.log(`${val} items per page`)
 }
 const handleCurrentChange = (val) => {
   currentPage.value = val;
-  init();
+  searchCustByName();
   console.log(`current page: ${val}`)
 }
 
@@ -401,49 +401,55 @@ const searchCustById = () => {
 }
 
 const searchCustByName = () => {
-  if (!(searchCust.value.name||searchCust.value.startDate)) {
+
+  if(searchCust.value.name==''&&searchCust.value.startDate==''){
+    init();
+  }else{
+    if (!(searchCust.value.name||searchCust.value.startDate)) {
     ElMessage.error('请输入搜索信息')
     return
-  }
-  const type = searchCust.value.state=="护理老人" ? 1 : 0;
-  //将时间转为字符串“YYYY-mm-dd”的形式，如果月份和日期是一位数自动补0
-  const year = searchCust.value.startDate.getFullYear()
-  const month = String(searchCust.value.startDate.getMonth() + 1).padStart(2, '0')
-  const day = String(searchCust.value.startDate.getDate()).padStart(2, '0')
-  const startDate = `${year}-${month}-${day}`
-  console.log(startDate)
-  const data = {
-    name: searchCust.value.name,
-    checkInTime: startDate,
-    type: type,
-    pageSize : pageSize.value,
-    pageNum : currentPage.value
-  };
-  axios.get('CustomerController/searchCust',{ params: data }).then(response => {
-    let rb = response.data;
-    if (rb.status == 200) {
-      customerList.value = rb.data.map(item => {
-        return {
-          age: item.age,
-          name: item.customer.name,
-          gender: item.customer.gender === 0 ? '男' : '女',
-          type: item.customer.type === 1 ? '护理老人' : '自理老人',
-          id: item.customer.identity,
-          blood: item.customer.bloodType,
-          tel: item.customer.tel,
-          contact: item.family.name,
-          floor: item.room.floor,
-          room: item.room.roomNumber,
-          bed: item.room.bedCount,
-          checkInTime: item.checkInRecord.checkInTime,
-          checkOutTime: item.checkInRecord.endTime,
-        }
-      })
-      total.value = rb.total
-    }else {
-      alert(rb.msg);
     }
-  }).catch(error => console.log(error));
+    const type = searchCust.value.state=="护理老人" ? 1 : 0;
+    //将时间转为字符串“YYYY-mm-dd”的形式，如果月份和日期是一位数自动补0
+    const year = searchCust.value.startDate.getFullYear()
+    const month = String(searchCust.value.startDate.getMonth() + 1).padStart(2, '0')
+    const day = String(searchCust.value.startDate.getDate()).padStart(2, '0')
+    const startDate = `${year}-${month}-${day}`
+    console.log(startDate)
+    const data = {
+      name: searchCust.value.name,
+      checkInTime: startDate,
+      type: type,
+      pageSize : pageSize.value,
+      pageNum : currentPage.value
+    };
+    axios.get('CustomerController/searchCust',{ params: data }).then(response => {
+      let rb = response.data;
+      if (rb.status == 200) {
+        customerList.value = rb.data.map(item => {
+          return {
+            age: item.age,
+            name: item.customer.name,
+            gender: item.customer.gender === 0 ? '男' : '女',
+            type: item.customer.type === 1 ? '护理老人' : '自理老人',
+            id: item.customer.identity,
+            blood: item.customer.bloodType,
+            tel: item.customer.tel,
+            contact: item.family.name,
+            floor: item.room.floor,
+            room: item.room.roomNumber,
+            bed: item.room.bedCount,
+            checkInTime: item.checkInRecord.checkInTime,
+            checkOutTime: item.checkInRecord.endTime,
+          }
+        })
+        total.value = rb.total
+      }else {
+        ElMessage.error(rb.msg);
+      }
+    }).catch(error => console.log(error));
+  }
+
 }
 
 //获取本行的信息给编辑框

@@ -39,12 +39,12 @@ const recordInfo = ref({
 
 const handleSizeChange = (val) => {
   pageSize.value = val;
-  init();
+  searchCheckOutRe();
   console.log(`${val} items per page`)
 }
 const handleCurrentChange = (val) => {
   currentPage.value = val;
-  init();
+  searchCheckOutRe();
   console.log(`current page: ${val}`)
 }
 
@@ -58,7 +58,6 @@ const init = () => {
   axios.get(url,{ params: data }).then(response => {
     let rb = response.data;
     if (rb.status == 200) {
-      console.log(rb.data)
       checkOutList.value = rb.data.map(item => {
         return {
           customerId: item.customerId,
@@ -187,24 +186,24 @@ const pass = () =>{
     let rb = res.data;
       if (rb.status == 200) {
         ElMessage.success("审批成功");
+        reDialogVisible.value=false;
+        init();
       }else {
-        alert(rb.msg);
+        ElMessage.error(rb.msg);
       }
   })
 }
 const notPass = () =>{
   const userid = sessionStorage.getItem('userId');
-  const data={
-    state : 2,
-    checkOutRecordId : recordInfo.value.id,
-    adminId : userid,
-  }
-  axios.get("CheckOutController/checkCheckOut",{params:data}).then(res =>{
-    let rb = response.data;
+  const url = `CheckOutController/checkCheckOut?state=2&checkOutRecordId=${recordInfo.value.checkOutRecordId}&adminId=${userid}`;
+  axios.post(url).then(res =>{
+    let rb = res.data;
     if (rb.status == 200) {
       ElMessage.success("审批成功");
+      reDialogVisible.value=false;
+      init();
     }else {
-      alert(rb.msg);
+      ElMessage.error(rb.msg);
     }
   })
 }
@@ -262,13 +261,13 @@ const notPass = () =>{
       </el-row>
       <el-table :data="checkOutList" border style="width: 100%;">
         <el-table-column type="index" label="#" align="center"/>
-        <el-table-column prop="name" label="老人姓名" align="center"/>
-        <el-table-column prop="age" label="年龄" width="60" align="center"/>
-        <el-table-column prop="gender" label="性别" width="60" align="center" :formatter="sexAtter"/>
-        <el-table-column prop="applyUser" label="申请人" width="100" align="center"/>
-        <el-table-column prop="applyType" label="申请类型" align="center" :formatter="typeAtter"/>
+        <el-table-column prop="name" label="老人姓名" width="150"align="center"/>
+        <el-table-column prop="age" label="年龄" width="80" align="center"/>
+        <el-table-column prop="gender" label="性别" width="80" align="center" />
+        <el-table-column prop="applyUser" label="申请人" width="150" align="center"/>
+        <el-table-column prop="applyType" label="申请类型" width="120" align="center" />
         <el-table-column prop="reason" label="退住原因" align="center"/>
-        <el-table-column prop="checkOutTime" label="申报时间" align="center"/>
+        <el-table-column prop="checkOutTime" label="申报时间" width="180" align="center"/>
         <el-table-column label="操作" width="180" align="center">
           <template #default="scope">
             <el-button type="warning" size="small" plain @click="getCheckOutRe(scope.row)">

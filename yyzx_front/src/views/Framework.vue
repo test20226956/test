@@ -7,7 +7,7 @@
   const type = computed(() =>{
     //这里应该根据用户类型来进行判断
     // sessionStorage.getItem('')
-    return false;
+    return true;
   })
 
   const adminRouterRef = ref(null);

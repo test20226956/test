@@ -10,51 +10,46 @@ const axios = inject('axios');
 
 //页面控制参数
 let currentPage = ref(1);
-let pageSize = ref(3);
+let pageSize = ref(10);
 let total = ref(0);
 const size = ref('default');
 const reDialogVisible = ref(false);
 const labelPosition = ref('right')
 
 const checkOutList = ref([])
-const searchCheckOut = reactive({
+const searchCheckOut = ref({
   name: '',
-  state: '',
+  state: '全部',
   checkOutTime: '',
 })
 const recordInfo = ref({
-  id : '',
-  name: '',
+  checkOutRecordId : '',
+  customerId : '',
+  customerName: '',
   age: '',
   gender: '',
   floor: '',
-  room: '',
-  bed: '',
-  applyUser: '',
-  backTime: '',
+  roomNumber: '',
+  bedNumber: '',
+  nurseName: '',
+  expectedReturnTime: '',
   reason: '',
-  checkOutTime: '',
+  outTime: '',
 })
 
 const handleSizeChange = (val) => {
   pageSize.value = val;
-  init();
+  searchCheckOutRe();
   console.log(`${val} items per page`)
 }
 const handleCurrentChange = (val) => {
   currentPage.value = val;
-  init();
+  searchCheckOutRe();
   console.log(`current page: ${val}`)
 }
-const typeAtter = (row, column, cellValue) =>{
-  console.log(cellValue)
-  return cellValue === 0 ? '审核通过' : '审核未通过'
-}
-const sexAtter = (row, column, cellValue) =>{
-  return cellValue === 0 ? '男' : '女'
-}
+
 const init = () => {
-  let url = 'GoOutController/searchCheckOut';
+  let url = 'GoOutController/searchGoOut';
   console.log(url)
   const data = {
     pageNum: currentPage.value,
@@ -64,7 +59,22 @@ const init = () => {
     let rb = response.data;
     if (rb.status == 200) {
       console.log(rb.data)
-      checkOutList.value = rb.data
+      checkOutList.value = rb.data.map(item => {
+        return {
+          customerId: item.customerId,
+          outRecordId : item.outRecordId,
+          age: item.age,
+          name: item.customerName,
+          gender: item.gender === 0 ? '男' : '女',
+          //如果状态为0则表示为未审批，1显示为通过，2表示为审批未通过
+          state: item.state === 0 ? '已提交' : item.state === 1 ? '通过' : '未通过',
+          applyUser: item.nurseName,
+          applyTime: item.applyTime,
+          reason: item.reason,
+          checkOutTime: item.outTime,
+          expectedReturnTime: item.expectedReturnTime,
+        }
+      })
       total.value = rb.total
     } else {
       alert(rb.msg);
@@ -74,90 +84,128 @@ const init = () => {
 init();
 
 const searchCheckOutRe = () => {
-  let url = 'GoOutController/showCheckOut';
-  console.log(url)
+  let url = 'GoOutController/searchGoOut';
+  // const year = searchCheckOut.value.applyTime.getFullYear()
+  // const month = String(searchCheckOut.value.applyTime.getMonth() + 1).padStart(2, '0')
+  // const day = String(searchCheckOut.value.applyTime.getDate()).padStart(2, '0')
+  // searchCheckOut.value.applyTime = `${year}-${month}-${day}`
   const data = {
     pageNum: currentPage.value,
     pageSize: pageSize.value,
-    name: searchCheckOut.name,
-    state: searchCheckOut.state,
-    checkOutTime: searchCheckOut.checkOutTime
+    customerName: searchCheckOut.value.name,
+    state: searchCheckOut.value.state === '已提交' ? 0 : searchCheckOut.value.state === '通过' ? 1 : searchCheckOut.value.state ==='未通过' ? 2 : '',
+    applyTime: searchCheckOut.value.checkOutTime
   };
   axios.get(url,{ params: data }).then(response => {
     let rb = response.data;
     if (rb.status == 200) {
-      checkOutList.value = rb.data
+      checkOutList.value = rb.data.map(item => {
+        return {
+          customerId: item.customerId,
+          outRecordId : item.outRecordId,
+          age: item.age,
+          name: item.customerName,
+          gender: item.gender === 0 ? '男' : '女',
+          //如果状态为0则表示为未审批，1显示为通过，2表示为审批未通过
+          state: item.state === 0 ? '已提交' : item.state === 1 ? '通过' : '未通过',
+          applyUser: item.nurseName,
+          reason: item.reason,
+          checkOutTime: item.outTime,
+          applyTime: item.applyTime,
+          expectedReturnTime: item.expectedReturnTime,
+        }
+      })
+      total.value = rb.total
     }else {
-      alert(rb.msg);
+      ElMessage.error(rb.msg);
     }
   })
 }
 
 const stateChenge = () => {
-  if(searchCheckOut.state == 3) init();
+  if(searchCheckOut.value.state == '全部') init();
   else{
-    let url = 'GoOutController/searchCheckOut';
+    let url = 'GoOutController/searchGoOut';
     const data = {
       pageNum: currentPage.value,
       pageSize: pageSize.value,
-      state: searchCheckOut.state,
+      state: searchCheckOut.value.state === '已提交' ? 0 : searchCheckOut.value.state === '通过' ? 1 : searchCheckOut.value.state ==='未通过' ? 2 : '',
     };
     axios.get(url,{ params: data }).then(response => {
       let rb = response.data;
       if (rb.status == 200) {
-        checkOutList.value = rb.data
+        checkOutList.value = rb.data.map(item => {
+          return {
+            customerId: item.customerId,
+            outRecordId : item.outRecordId,
+            age: item.age,
+            name: item.customerName,
+            gender: item.gender === 0 ? '男' : '女',
+            //如果状态为0则表示为未审批，1显示为通过，2表示为审批未通过
+            state: item.state === 0 ? '已提交' : item.state === 1 ? '通过' : '未通过',
+            applyUser: item.nurseName,
+            reason: item.reason,
+            checkOutTime: item.outTime,
+            applyTime: item.applyTime,
+            expectedReturnTime: item.expectedReturnTime,
+          }
+        })
+        total.value = rb.total
       }else {
-        alert(rb.msg);
+        ElMessage.error(rb.msg);
       }
     })
   }
 }
 
 const getCheckOutRe = (row) => {
-  reDialogVisible.value=true;
-  const url = 'GoOutController/getRecord';
-  const data = {
-    id: row.id
-  };
-  axios.get(url,{ params: data }).then(response => {
-    let rb = response.data;
-    if (rb.status == 200) {
-      recordInfo.value = rb.data
-    }else {
-      alert(rb.msg);
-    }
-  })
+  if(row.state == '已提交'){
+    reDialogVisible.value=true;
+    const url = 'GoOutController/getRecord';
+    const data = {
+      outRecordId: row.outRecordId,
+    };
+    axios.get(url,{ params: data }).then(response => {
+      let rb = response.data;
+      if (rb.status == 200) {
+        recordInfo.value = rb.data
+        recordInfo.value.type = recordInfo.value.type === 0 ? '正常退住' : recordInfo.value.type === 1 ? '死亡退住' : '保留床位';
+        recordInfo.value.gender = recordInfo.value.gender === 0 ? '男' : '女';
+      }else {
+        ElMessage.error(rb.msg);
+      }
+    })
+  }else{
+    ElMessage.error('该申请已完成审批');
+  }
+
 }
 
 const pass = () =>{
   const userid = sessionStorage.getItem('userId');
-  const data={
-    state : 1,
-    checkOutRecordId : recordInfo.value.id,
-    adminId : userid,
-  }
-  axios.get("GoOutController/checkCheckOut",{params:data}).then(res =>{
-    let rb = response.data;
+  const url = `GoOutController/checkGoOut?state=1&outRecordId=${recordInfo.value.outRecordId}&adminId=${userid}`;
+  axios.post(url).then(res =>{
+    let rb = res.data;
     if (rb.status == 200) {
       ElMessage.success("审批成功");
+      reDialogVisible.value=false;
+      init();
     }else {
-      alert(rb.msg);
+      ElMessage.error(rb.msg);
     }
   })
 }
 const notPass = () =>{
   const userid = sessionStorage.getItem('userId');
-  const data={
-    state : 2,
-    checkOutRecordId : recordInfo.value.id,
-    adminId : userid,
-  }
-  axios.get("GoOutController/checkCheckOut",{params:data}).then(res =>{
-    let rb = response.data;
+  const url = `GoOutController/checkGoOut?state=2&outRecordId=${recordInfo.value.outRecordId}&adminId=${userid}`;
+  axios.post(url).then(res =>{
+    let rb = res.data;
     if (rb.status == 200) {
       ElMessage.success("审批成功");
+      reDialogVisible.value=false;
+      init();
     }else {
-      alert(rb.msg);
+      ElMessage.error(rb.msg);
     }
   })
 }
@@ -206,29 +254,23 @@ const notPass = () =>{
         <!--        新增下拉选择框选择老人类型-->
         <el-col :span="2" :offset="1" class="table-search">
           <el-select v-model="searchCheckOut.state" placeholder="请选择老人类型" @change="stateChenge">
-            <el-option label="全部" value="2"></el-option>
-            <el-option label="未审批" value=0></el-option>
-            <el-option label="已通过" value=1></el-option>
-            <el-option label="已通过" value=3></el-option>
+            <el-option label="全部" value="全部"></el-option>
+            <el-option label="已提交" value="已提交"></el-option>
+            <el-option label="通过" value="通过"></el-option>
+            <el-option label="未通过" value="未通过"></el-option>
           </el-select>
-        </el-col>
-        <el-col :span="2" :offset="18" class="table-search">
-          <el-button type="primary" plain @click="addBntVis">
-            <el-icon style="margin-right: 5px;">
-              <Plus/>
-            </el-icon>
-            新增
-          </el-button>
         </el-col>
       </el-row>
       <el-table :data="checkOutList" border style="width: 100%;">
-        <el-table-column prop="name" label="老人姓名" align="center"/>
-        <el-table-column prop="age" label="年龄" width="60" align="center"/>
-        <el-table-column prop="gender" label="性别" width="60" align="center" :formatter="sexAtter"/>
-        <el-table-column prop="applyUser" label="申请人" width="100" align="center"/>
-        <el-table-column prop="reason" label="外出原因" align="center"/>
-        <el-table-column prop="checkOutTime" label="外出时间" align="center" :formatter="typeAtter"/>
-        <el-table-column prop="backTime" label="回院时间" align="center"/>
+        <el-table-column type="index" label="#" align="center"/>
+        <el-table-column prop="name" label="老人姓名" width="150" align="center"/>
+        <el-table-column prop="age" label="年龄" width="80" align="center"/>
+        <el-table-column prop="gender" label="性别" width="80" align="center" />
+        <el-table-column prop="applyUser" label="申请人" width="150" align="center"/>
+        <el-table-column prop="reason" label="外出原因"  align="center"/>
+        <el-table-column prop="applyTime" label="申请时间" width="150" align="center" />
+        <el-table-column prop="checkOutTime" label="外出时间" width="150" align="center" />
+        <el-table-column prop="expectedReturnTime" label="回院时间" width="150" align="center"/>
         <el-table-column label="操作" width="180" align="center">
           <template #default="scope">
             <el-button type="warning" size="small" plain @click="getCheckOutRe(scope.row)">
@@ -242,7 +284,7 @@ const notPass = () =>{
       <el-pagination
           v-model:current-page="currentPage"
           v-model:page-size="pageSize"
-          :page-sizes="[3,5,7]"
+          :page-sizes="[10,5]"
           layout="total, sizes, prev, pager, next, jumper"
           :total="total"
           @size-change="handleSizeChange"
@@ -250,11 +292,11 @@ const notPass = () =>{
       />
     </div>
   </div>
-  <el-dialog title="退住申请审批" v-model="reDialogVisible" width="40%" class="dialog-content">
+  <el-dialog title="外出申请审批" v-model="reDialogVisible" width="40%" class="dialog-content">
     <!--    以文字的形式展示record中的信息，不需要输入和修改-->
     <el-row gutter="20" justify="start">
       <el-col :span="9" :offset="3" >
-        老人姓名：{{recordInfo.name}}
+        老人姓名：{{recordInfo.customerName}}
       </el-col>
       <el-col :span="9" >
         楼层：{{recordInfo.floor}}
@@ -265,7 +307,7 @@ const notPass = () =>{
         年龄：{{recordInfo.age}}
       </el-col>
       <el-col :span="9" >
-        房间号：{{recordInfo.room}}
+        房间号：{{recordInfo.roomNumber}}
       </el-col>
     </el-row>
     <el-row gutter="20" justify="start">
@@ -273,22 +315,22 @@ const notPass = () =>{
         性别：{{recordInfo.gender}}
       </el-col>
       <el-col :span="9" >
-        床位：{{recordInfo.bed}}
+        床位：{{recordInfo.bedNumber}}
       </el-col>
     </el-row>
     <el-row gutter="20" justify="start">
       <el-col :offset="3" :span="18" >
-        申报人：{{recordInfo.applyUser}}
+        申报人：{{recordInfo.nurseName}}
       </el-col>
     </el-row>
     <el-row gutter="20" justify="start">
       <el-col :offset="3" :span="18" >
-        申报时间：{{recordInfo.checkOutTime}}
+        外出时间：{{recordInfo.outTime}}
       </el-col>
     </el-row>
     <el-row gutter="20" justify="start">
       <el-col :offset="3" :span="18" >
-        回院时间：{{recordInfo.backTime}}
+        回院时间：{{recordInfo.expectedReturnTime}}
       </el-col>
     </el-row>
     <el-row gutter="20" justify="start">

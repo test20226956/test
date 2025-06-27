@@ -2,20 +2,21 @@
 import {Edit, RefreshRight, Search} from "@element-plus/icons-vue";
 import { ref, reactive, computed, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage, ElLoading,  FormItemProps, FormProps } from 'element-plus'
+import {ElMessage, ElLoading, FormItemProps, FormProps, ElMessageBox} from 'element-plus'
 
 const route = useRoute();
 const router = useRouter();
 const axios = inject('axios');
 
 let currentPage = ref(1);
-let pageSize = ref(3);
+let pageSize = ref(10);
 let total = ref(0);
 const size = ref('default');
 const dialogVisible = ref(false);
 const addDialogVisible = ref(false);
 const labelPosition = ref('right')
 
+const userId = ref(8);
 const custId = ref('');
 const searchCust = ref({
   name: '',
@@ -28,20 +29,27 @@ const searchRecord = ref({
 const customerList = ref([]);
 const recordList = ref([]);
 
+const bloodAtter = (row, column, cellValue) =>{
+  return cellValue+'型'
+}
+const floorAtter = (row, column, cellValue) =>{
+  return cellValue+'层'
+}
 const handleSizeChange = (val) => {
   pageSize.value = val;
-  init();
+  searchCustByName();
   console.log(`${val} items per page`)
 }
 const handleCurrentChange = (val) => {
   currentPage.value = val;
-  init();
+  searchCustByName();
   console.log(`current page: ${val}`)
 }
 
 const init = () => {
-  const userid = sessionStorage.getItem('userId');
-  let url = 'UerController/showUserCust';
+  const userid = userId.value;
+  //const userid = sessionStorage.getItem('userId');
+  let url = 'UserController/showUserCust';
   const data = {
     userId : userid,
     pageNum: currentPage.value,
@@ -54,53 +62,63 @@ const init = () => {
       customerList.value = rb.data
       total.value = rb.total
     } else {
-      alert(rb.msg);
+      ElMessage.error(rb.msg);
     }
   }).catch(error => console.log(error));
 }
 init();
 
 const searchCustByName = () => {
-  const userid = sessionStorage.getItem('userId');
-  const url = 'UserController/searchUserCust';
-  const data = {
-    userId : userid,
-    name: searchCust.value.name,
-    pageNum: currentPage.value,
-    pageSize: pageSize.value
-  };
-  axios.get(url,{ params: data }).then(response => {
-    let rb = response.data;
-    if (rb.status == 200) {
-      customerList.value = rb.data;
-      total.value = rb.total
-    }
-  }).catch(error => console.log(error));
+  if(searchCust.value.name === '') init();
+  else {
+    const userid = userId.value;
+    //const userid = sessionStorage.getItem('userId');
+    const url = 'UserController/searchUserCust';
+    const data = {
+      userId : userid,
+      name: searchCust.value.name,
+      pageNum: currentPage.value,
+      pageSize: pageSize.value
+    };
+    axios.get(url,{ params: data }).then(response => {
+      let rb = response.data;
+      if (rb.status == 200) {
+        customerList.value = rb.data;
+        total.value = rb.total
+      }else{
+        ElMessage.error(rb.msg);
+      }
+    }).catch(error => console.log(error));
+  }
 }
 
 const showProRe = (row) => {
-  custId.value = row.id;
+  custId.value = row.customerId;
   dialogVisible.value = true;
-  getProRe();
+  searchRecord.value = {
+    name: '',
+    applyTime: ''
+  }
+  getRecord();
 }
 
 const getRecord = () => {
-  const url = "UerController/showCareRecord";
+  const url = "UserController/showCareRecord";
   const data = {
     customerId : custId.value,
   }
   axios.get(url,{ params: data }).then(response => {
     let rb = response.data;
     if (rb.status == 200) {
-      careRecordList.value = rb.data;
+      recordList.value = rb.data;
     }else{
-      alert(rb.msg);
+      ElMessage.error(rb.msg);
     }
   }).catch(error => console.log(error));
 }
 
 const searchRecordByName = () => {
-  const url = "UerController/searchCareRecord";
+  const url = "UserController/searchCareRecord";
   const data = {
     customerId : custId.value,
     name : searchRecord.value.name,
@@ -116,17 +134,30 @@ const searchRecordByName = () => {
   }).catch(error => console.log(error));
 }
 
-const deleteRecord = (row) => {
-  const url = "UerController/deleteCareRecord";
-  const data = {
-    ids: row.id,
-  };
-  axios.post(url, data).then(response => {
-    if(response.data.code == 200){
-      alert(response.data.msg);
+const confirmDelete = (row) => {
+  ElMessageBox.confirm("此操作将永久删除该护理记录, 是否继续?", "提示", {
+    confirmButtonText: "确定",
+    cancelButtonText: "取消",
+    type: "warning",
+  })
+      .then(() => {
+        deleteRecord(row.nursingRecordId);
+      })
+      .catch(() => {
+        ElMessage({
+          type: "info",
+          message: "已取消删除",
+        });
+      });
+}
+const deleteRecord = (id) => {
+  let url = `UserController/deleteCareRecord?ids=${id}`;
+  axios.post(url).then(response => {
+    if(response.data.status == 200){
+      ElMessage.success("删除成功");
       getRecord();
     }else{
-      alert(response.data.msg);
+      ElMessage.error(response.data.msg);
     }
   }).catch(error => console.log(error));
 }
@@ -166,11 +197,11 @@ const deleteRecord = (row) => {
         <el-table-column prop="name" label="客户姓名" align="center"/>
         <el-table-column prop="age" label="年龄" width="60" align="center"/>
         <el-table-column prop="gender" label="性别" width="60" align="center"/>
-        <el-table-column prop="blood" label="血型" align="center"/>
-        <el-table-column prop="contact" label="联系人" align="center"/>
+        <el-table-column prop="bloodType" label="血型" align="center" :formatter="bloodAtter"/>
+        <el-table-column prop="fName" label="联系人" align="center"/>
         <el-table-column prop="tel" label="联系电话" align="center"/>
-        <el-table-column prop="floor" label="楼层" align="center"/>
-        <el-table-column prop="room" label="房间号" align="center"/>
+        <el-table-column prop="floor" label="楼层" align="center" :formatter="floorAtter"/>
+        <el-table-column prop="roomNumber" label="房间号" align="center"/>
         <el-table-column label="操作" width="180" align="center">
           <template #default="scope">
             <el-button type="warning" size="small" plain @click="showProRe(scope.row)">
@@ -184,7 +215,7 @@ const deleteRecord = (row) => {
       <el-pagination
           v-model:current-page="currentPage"
           v-model:page-size="pageSize"
-          :page-sizes="[3,5,7]"
+          :page-sizes="[10,5]"
           layout="total, sizes, prev, pager, next, jumper"
           :total="total"
           @size-change="handleSizeChange"
@@ -192,19 +223,24 @@ const deleteRecord = (row) => {
       />
     </div>
   </div>
-  <el-dialog title="查看护理记录" v-model="dialogVisible" width="40%">
+  <el-dialog title="查看护理记录" v-model="dialogVisible" v-if="dialogVisible" width="40%">
     <el-row :gutter="20">
-      <el-col :offset="2" :span="6" class="search-col">
+      <el-col :offset="1":span="8" class="search-col">
         <el-form-item label="项目名称">
-          <el-input v-model="searchRecord.name" placeholder="请输入老人姓名"></el-input>
+          <el-input v-model="searchRecord.name" placeholder="请输入项目姓名"></el-input>
         </el-form-item>
       </el-col>
-      <el-col :offset="2" :span="6" class="search-col">
-        <el-form-item label="申请时间">
-          <el-input v-model="searchRecord.applyTime" placeholder="请输入申请时间"></el-input>
+      <el-col :span="8" class="search-col">
+        <el-form-item label="记录时间">
+          <el-date-picker
+            v-model="searchRecord.applyTime"
+            type="date"
+            placeholder="请选择日期"
+            :size="size"
+          />
         </el-form-item>
       </el-col>
-      <el-col :span="6" class="search-col">
+      <el-col :span="3" class="search-col">
         <el-button type="primary" plain @click="searchRecordByName">
           <el-icon style="margin-right: 5px;">
             <Search/>
@@ -212,14 +248,22 @@ const deleteRecord = (row) => {
           搜索
         </el-button>
       </el-col>
+      <el-col :span="3" class="search-col">
+        <el-button type="info" plain @click="getRecord">
+          <el-icon style="margin-right: 5px;">
+            <RefreshRight/>
+          </el-icon>
+          重置
+        </el-button>
+      </el-col>
     </el-row>
-    <el-table :data="recordList" border style="width: 100%;">
-      <el-table-column type="index" label="#" width="50" align="center"/>
+    <el-table :data="recordList" border style="width: 100%;" width="300Px" height="240Px">
+      <el-table-column type="index" label="#" width="80" align="center"/>
       <el-table-column prop="name" label="服务名称" align="center"/>
-      <el-table-column prop="time" label="护理时间" width="60" align="center"/>
+      <el-table-column prop="time" label="护理时间" width="150" align="center"/>
       <el-table-column label="操作" width="120" align="center">
         <template #default="scope">
-          <el-button type="warning" size="small" plain @click="deleteRecord(scope.row)">
+          <el-button type="warning" size="small" plain @click="confirmDelete(scope.row)">
             <el-icon style="margin-right: 5px;"><Edit /></el-icon> 删除
           </el-button>
         </template>

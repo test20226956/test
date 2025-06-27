@@ -183,21 +183,58 @@ defineProps({
 .el-menu-vertical-demo{
   background-color: #e1e9e3;
 }
-.item{
-  background-color: #f0f4f1;
-  transition: background-color 0.3s;
+
+/* 展开时 - 主菜单默认文字和图标颜色 */
+.el-menu:not(.el-menu--collapse) .el-sub-menu__title {
+  color: #5a6e63;
 }
-.item:hover{
-  background-color: #e8eeea; /* 想要的背景色 */
-  transition: background-color 0.3s;
+.el-menu:not(.el-menu--collapse) .el-sub-menu__title .el-icon {
+  color: #5a6e63;
 }
-:deep(.el-menu-item.is-active) {
-  color: #9db7a5;
-  font-weight: bold;         /* 可选：让激活项加粗 */
+
+/* 展开时 - 主菜单 hover 效果 */
+.el-menu:not(.el-menu--collapse) .el-sub-menu__title:hover {
+  background-color: #e8eeea;
+  color: #8ea195;
 }
-:deep(.el-sub-menu__title:hover) {
-  background-color: #a5bdac !important;
-  color: white; /* 可选：改变文字颜色 */
+.el-menu:not(.el-menu--collapse) .el-sub-menu__title:hover .el-icon {
+  color: #8ea195;
+}
+
+/* 展开时 - 主菜单激活状态 */
+.el-menu:not(.el-menu--collapse) .el-sub-menu.is-active > .el-sub-menu__title {
+  background-color: #a6bdad !important;
+  color: #ffffff !important;
+}
+.el-menu:not(.el-menu--collapse) .el-sub-menu.is-active > .el-sub-menu__title .el-icon {
+  color: #ffffff !important;
+}
+
+/* 展开时 - 子菜单默认颜色 */
+.el-menu:not(.el-menu--collapse) .el-menu-item {
+  color: #5a6e63;
+}
+.el-menu:not(.el-menu--collapse) .el-menu-item .el-icon {
+  color: #5a6e63;
+}
+
+/* 展开时 - 子菜单 hover 效果 */
+.el-menu:not(.el-menu--collapse) .el-menu-item:hover {
+  background-color: #e8eeea;
+  color: #8ea195;
+}
+.el-menu:not(.el-menu--collapse) .el-menu-item:hover .el-icon {
+  color: #8ea195;
+}
+
+/* 展开时 - 子菜单激活项样式（可选） */
+.el-menu:not(.el-menu--collapse) .el-menu-item.is-active {
+  background-color: #a6bdad;
+  color: #ffffff;
+  font-weight: bold;
+}
+.el-menu:not(.el-menu--collapse) .el-menu-item.is-active .el-icon {
+  color: #ffffff;
 }
 .icon {
   position: fixed; /* 固定位置 */
