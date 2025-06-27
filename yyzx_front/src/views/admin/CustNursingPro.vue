@@ -42,7 +42,7 @@
       <!-- 项目表格 -->
       <div class="main-table">
         <el-table :data="customerNursingList">
-          <el-table-column prop="customer.customerId" label="客户编号" align="center"></el-table-column>
+          <el-table-column type="index" label="#" align="center"/>
           <el-table-column prop="customer.name" label="姓名" align="center"></el-table-column>
           <el-table-column prop="age" label="年龄" align="center"></el-table-column>
           <el-table-column prop="customer.gender" label="性别" align="center">
@@ -126,26 +126,26 @@
             <template v-slot="scope">
               <el-form :model="scope.row" label-width="0" inline style="width: 100%;" :rules="amountRules" ref="amountRef">
                 <el-form-item prop="amount" style="width: 100%;" >
-                    <el-input type="number" v-model="scope.row.amount" style="width: 100%; box-sizing: border-box;"/>
+                  <el-input type="number" v-model="scope.row.amount" style="width: 100%; box-sizing: border-box;"/>
                 </el-form-item>
               </el-form>
             </template>
           </el-table-column>
           <el-table-column prop="endTime" label="结束时间" align="center" width="150px">
-              <template v-slot="scope">
-                <el-form :model="scope.row" :rules="timeRules" ref="timeRef">
-                  <el-form-item prop="endTime">
-                    <el-date-picker
-                        v-model="scope.row.endTime"
-                        type="date"
-                        placeholder="请选择结束日期"
-                        :disabled-date="disabledDate"
-                        :shortcuts="shortcuts"
-                        value-format="YYYY-MM-DD"
-                    ></el-date-picker>
-                  </el-form-item>
-                </el-form>
-              </template>
+            <template v-slot="scope">
+              <el-form :model="scope.row" :rules="timeRules" ref="timeRef">
+                <el-form-item prop="endTime">
+                  <el-date-picker
+                      v-model="scope.row.endTime"
+                      type="date"
+                      placeholder="请选择结束日期"
+                      :disabled-date="disabledDate"
+                      :shortcuts="shortcuts"
+                      value-format="YYYY-MM-DD"
+                  ></el-date-picker>
+                </el-form-item>
+              </el-form>
+            </template>
           </el-table-column>
         </el-table>
       </el-row>
@@ -170,7 +170,7 @@ import dayjs from 'dayjs'
 // 搜索的客户
 const searchedCustomer = ref({
   name:'',
-  nursingLevelId:0,
+  nursingLevelId:'',
 })
 
 // 搜索的护理级别
@@ -313,7 +313,23 @@ const searchCustomers = () => {
   console.log('search customers!');
   if(searchedCustomer.value.nursingLevelId === 0){
     console.log("搜索无级别的！");
-    let url1 = `NursingProjectController//searchNoLevelCareCust?name=${searchedCustomer.value.name}&pageNum=${currentPage.value}&pageSize=${pageSize.value}`
+    let url1 = `CustomerController/searchNoLevelCareCust?name=${searchedCustomer.value.name}&pageNum=${currentPage.value}&pageSize=${pageSize.value}`
+    axios.get(url1).then(response => {
+      let rb = response.data;
+      if(rb.status === 200){
+        customerNursingList.value = rb.data;
+        total.value = rb.total;
+        ElMessage({message:`查找到${total.value}条数据`, type:'success'});
+      }else{
+        console.log(rb.msg);
+        if(rb.msg === '查不到符合条件的记录'){
+          ElMessage({message:'无数据', type:'success'});
+          customerNursingList.value = [];
+          total.value = 0;
+        }
+      }
+    })
+    return;
   }
   let url = `CustomerController/searchCareCust?name=${searchedCustomer.value.name}&nursingLevelId=${searchedCustomer.value.nursingLevelId}&pageNum=${currentPage.value}&pageSize=${pageSize.value}`;
   axios.get(url).then(response => {
@@ -327,6 +343,7 @@ const searchCustomers = () => {
       if(rb.msg === '查不到符合条件的记录'){
         ElMessage({message:'无数据', type:'success'});
         customerNursingList.value = [];
+        total.value = 0;
       }
     }
   }).catch(error => {
@@ -339,7 +356,7 @@ const resetTable = () => {
   initTable();
   searchedCustomer.value = {
     name:'',
-    nursingLevelId:null
+    nursingLevelId: ''
   }
 }
 
@@ -361,7 +378,7 @@ const deleteLevel = (row) => {
           console.log(error);
         })
       }).catch(error => {
-        console.log(error);
+    console.log(error);
   })
 
 }
@@ -406,7 +423,7 @@ const handleLevelChange = () => {
       const end = new Date(now);
       end.setMonth(end.getMonth() + 3);
       const endTime = dayjs(end).format('YYYY-MM-DD');
-    //   增加属性
+      //   增加属性
       nursingServiceList.value.forEach((item, index) => {
         nursingServiceList.value[index].amount = 1;
         nursingServiceList.value[index].purchaseTime = purchaseTime;

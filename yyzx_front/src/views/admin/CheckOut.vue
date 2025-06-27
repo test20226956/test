@@ -176,13 +176,8 @@ const getCheckOutRe = (row) => {
 
 const pass = () =>{
   const userid = sessionStorage.getItem('userId');
-  const data={
-    state : 1,
-    checkOutRecordId : recordInfo.value.checkOutRecordId,
-    adminId : userid,
-  }
-  const url = 'CheckOutController/checkCheckOut';
-  axios.post(url,data).then(res =>{
+  const url = `CheckOutController/checkCheckOut?state=1&checkOutRecordId=${recordInfo.value.checkOutRecordId}&adminId=${userid}`;
+  axios.post(url).then(res =>{
     let rb = res.data;
       if (rb.status == 200) {
         ElMessage.success("审批成功");

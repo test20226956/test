@@ -54,6 +54,7 @@
                   style="width: 100%; overflow-y: auto; height: 100%; max-height: 55vh;" class="table"
                   @expand-change="handleExpand"
                   :row-key="row => row.nursingLevelId"
+                  ref="tableRef"
         >
           <!-- 展开列 -->
           <el-table-column type="expand">
@@ -62,7 +63,7 @@
                 <!-- 子表格 -->
                 <el-table :data="props.row.projects" size="small"
                           style="justify-content: center; width: 100%;">
-                  <el-table-column prop="nursingProjectId" label="项目编号" width="180" align="center" />
+                  <el-table-column type="index" label="#" align="center"/>
                   <el-table-column prop="name" label="名称" width="180" align="center" />
                   <el-table-column prop="price" label="价格" width="180" align="center" />
                   <el-table-column prop="period" label="周期" width="180" align="center" />
@@ -83,7 +84,7 @@
             </template>
           </el-table-column>
           <!-- 主表格列 -->
-          <el-table-column prop="nursingLevelId" label="级别编号" width="180" align="center" />
+          <el-table-column type="index" label="#" align="center"/>
           <el-table-column prop="name" label="名称" width="180" align="center" />
           <el-table-column prop="state" label="状态" width="180" align="center" >
             <template #default="scope">
@@ -292,6 +293,9 @@ const searchedLevel = ref({
   state: 1,
 })
 
+// 表格ref
+const tableRef = ref(null);
+
 // 级别的列表（分页后）
 const nursingLevelList = ref([]);
 
@@ -466,6 +470,14 @@ const handleExpand = (row, expandedRows) => {
   }
 }
 
+// 收回所有展开行
+const collapseAll = () => {
+  // 遍历所有行，逐一收起
+  nursingLevelList.value.forEach(row => {
+    tableRef.value.toggleRowExpansion(row, false)
+  })
+}
+
 // 重置表格内容
 const resetTable = () => {
   // 重置搜索框
@@ -473,9 +485,12 @@ const resetTable = () => {
     name: '',
     state: 1,
   }
+  // 重置分页
   total.value = 400;
   currentPage.value = 1;
   pageSize.value = 5;
+  // 表格都收回
+  collapseAll();
   initTable();
 }
 
@@ -697,7 +712,7 @@ const proDialogClose = () => {
       .then(() => {
         proDialogVisible.value = false;
         selectedUnAddedProList.value = [];
-      //   重置的添加项目的搜索
+        //   重置的添加项目的搜索
         searchUnAddedProName.value = '';
       }).catch((error) => {
     console.log(error);
@@ -776,7 +791,7 @@ const deleteLevel = (row) => {
         axios.post(url).then(response => {
           let rb = response.data;
           if(rb.status === 200){
-            ElMessage({message:'删除成功', type:'success'});
+
             resetTable();
           }else{
             console.log(rb.msg);
@@ -792,17 +807,13 @@ const deleteLevel = (row) => {
 // 在展开时删除级别下的项目
 const deleteProjectWhenExpand = (proRow, lvRow) => {
   console.log('delete project when expand');
-  let data = {
-    levelId: lvRow.nursingLevelId,
-    proId: proRow.nursingProjectId,
-  }
   ElMessageBox.confirm('确定删除这条表项？')
       .then(() => {
-        let url = `NursingLevelController/deleteNursingPro`;
-        axios.post(url, qs.stringify(data)).then(response => {
+        let url = `NursingLevelController/deleteNursingPro?nursingProjectId=${proRow.nursingProjectId}&nursingLevelId=${lvRow.nursingLevelId}`;
+        axios.post(url).then(response => {
           let rb = response.data;
-          if(rb === 200){
-            console.log('修改成功');
+          if(rb.status === 200){
+            ElMessage({message:'删除成功', type:'success'});
             resetTable();
           }else{
             console.log(rb.msg);

@@ -25,11 +25,11 @@
             <el-col :span="8" class="search-col">
               <el-form-item class="search-item" label="级别">
                 <el-select
-                    v-model="searchedCustomer.state"
+                    v-model="searchedCustomer.nursingLevelId"
                     placeholder="护理级别"
                 >
                   <el-option
-                      v-for="level in nursingLevelList"
+                      v-for="level in searchableLevelList"
                       :key="level.nursingLevelId"
                       :label="level.name"
                       :value="level.nursingLevelId"
@@ -52,7 +52,7 @@
         <!-- 表格 -->
         <div class="main-table">
           <el-table :data="customerNursingList" @row-click="handleRowClick" highlight-current-row>
-            <el-table-column prop="customer.customerId" label="客户编号" align="center"></el-table-column>
+            <el-table-column type="index" label="#" align="center"/>
             <el-table-column prop="customer.name" label="姓名" align="center"></el-table-column>
             <el-table-column prop="age" label="年龄" align="center" v-if="!isDetailView"></el-table-column>
             <el-table-column prop="customer.gender" label="性别" align="center" v-if="!isDetailView">
@@ -158,6 +158,7 @@
                     placeholder="请选择开始日期"
                     :disabled-date="disabledDate"
                     :shortcuts="shortcuts"
+                    value-format="YYYY-MM-DD"
                 ></el-date-picker>
               </el-form-item>
             </el-col>
@@ -176,7 +177,7 @@
         <!-- 表格 -->
         <div class="main-table">
           <el-table :data="recordList" style="overflow-y: auto" max-height="40vh">
-            <el-table-column prop="nursingRecord.nursingRecordId" label="记录编号" width="100px" align="center"></el-table-column>
+            <el-table-column type="index" label="#" align="center"/>
             <el-table-column prop="nursingProject.name" label="项目名称" align="center" width="100px"></el-table-column>
             <el-table-column prop="nursingRecord.count" label="数量" align="center" width="100px" v-if="isDetailView"></el-table-column>
             <el-table-column prop="nursingProject.description" label="内容" align="center" width="100px" v-if="isDetailView"></el-table-column>
@@ -217,11 +218,12 @@ import { ElMessageBox, ElMessage } from 'element-plus';
 import {ref, inject, computed} from 'vue'
 import qs from 'qs';
 const axios = inject('axios');
+import dayjs from 'dayjs'
 
 // 搜索的客户
 const searchedCustomer = ref({
   name:'',
-  nursingLevelId: 0,
+  nursingLevelId: '',
 });
 
 // 客户表是否展开
@@ -306,6 +308,11 @@ const shortcuts = [
 // 搜索的护理级别信息， 需要级别编号和级别名称，放在select组件的option里
 const nursingLevelList = ref([]);
 
+// 派生一个带“无级别”的选项列表，仅用于搜索
+const searchableLevelList = computed(() => {
+  return [{ nursingLevelId: 0, name: '无级别' }, ...nursingLevelList.value];
+});
+
 // 客户列表
 const customerNursingList = ref([]);
 
@@ -379,10 +386,56 @@ const showMore = () => {
 
 // 查找客户
 const searchCustomers = () => {
-
+  console.log('search customers!');
+  console.log(searchedCustomer.value);
+  if(searchedCustomer.value.nursingLevelId === 0){
+    console.log("搜索无级别的！");
+    let url1 = `CustomerController/searchNoLevelCareCust?name=${searchedCustomer.value.name}&pageNum=${customerCurrentPage.value}&pageSize=${customerPageSize.value}`
+    axios.get(url1).then(response => {
+      let rb = response.data;
+      if(rb.status === 200){
+        customerNursingList.value = rb.data;
+        customerTotal.value = rb.total;
+        ElMessage({message:`查找到${customerTotal.value}条数据`, type:'success'});
+      }else{
+        console.log(rb.msg);
+        if(rb.msg === '查不到符合条件的记录'){
+          ElMessage({message:'无数据', type:'success'});
+          customerNursingList.value = [];
+          customerTotal.value = 0;
+        }
+      }
+    })
+    return;
+  }
+  let url = `CustomerController/searchCareCust?name=${searchedCustomer.value.name}&nursingLevelId=${searchedCustomer.value.nursingLevelId}&pageNum=${customerCurrentPage.value}&pageSize=${customerPageSize.value}`;
+  axios.get(url).then(response => {
+    let rb = response.data;
+    if(rb.status === 200){
+      customerNursingList.value = rb.data;
+      customerTotal.value = rb.total;
+      ElMessage({message:`查找到${customerTotal.value}条数据`, type:'success'});
+    }else{
+      console.log(rb.msg);
+      if(rb.msg === '查不到符合条件的记录'){
+        ElMessage({message:'无数据', type:'success'});
+        customerNursingList.value = [];
+        customerTotal.value = 0;
+      }
+    }
+  }).catch(error => {
+    console.log(error);
+  })
 }
 
 // 重置查找结果
+const resetCustomers = () => {
+  searchedCustomer.value = {
+    name:'',
+    nursingLevelId: '',
+  };
+  initTable();
+}
 
 // 客户表格点击
 const handleRowClick = (row) => {
@@ -415,26 +468,62 @@ const getRecords = () => {
 
 // 查找记录
 const searchRecords = () => {
+  console.log('search records!');
+  let searchedTime = searchedRecord.value.nursingRecord.time;
+  console.log(searchedTime);
+  let url = `NursingRecordController/showNursingRecord?customerId=${selectedCustomer.value.customer.customerId}&projectName=${searchedRecord.value.nursingProject.name}&pageNum=${recordCurrentPage.value}&pageSize=${recordPageSize.value}&time=${searchedRecord.value.nursingRecord.time}`;
+  axios.get(url).then(response => {
+    let rb = response.data;
+    if(rb.status === 200){
+      ElMessage({message:`找到${rb.total}条数据`, type:'success'});
+      recordTotal.value = rb.total;
+      recordList.value = rb.data;
+    }else{
+      console.log(rb.msg);
+      if(rb.msg === '查不到符合条件的记录'){
+        ElMessage({message:'无数据', type:'success'});
+        recordList.value = [];
+        recordTotal.value = 0;
+      }
+    }
+  }).catch(error => {
+    console.log(error);
+  })
+}
 
+// 重置查找记录
+const resetRecords = () => {
+  getRecords();
+  searchedRecord.value = {
+    nurse:{
+      name:'',
+    },
+    nursingProject:{
+      name:'',
+    },
+    nursingRecord:{
+      time:'',
+    }
+  }
 }
 
 // 删除记录
 const deleteRecord = (row) => {
   ElMessageBox.confirm('确定删除这条记录？')
       .then(() => {
-    let url = `NursingRecordController/deleteNursingRecord?nursingRecordId=${row.nursingRecord.nursingRecordId}`;
-    axios.post(url).then(response => {
-      let rb = response.data;
-      if(rb.status === 200){
-        ElMessage({message:'删除成功', type:'success'});
-        getRecords();
-      }else{
-        console.log(rb.msg);
-      }
-    }).catch(error => {
-      console.log(error);
-    })
-  })
+        let url = `NursingRecordController/deleteNursingRecord?nursingRecordId=${row.nursingRecord.nursingRecordId}`;
+        axios.post(url).then(response => {
+          let rb = response.data;
+          if(rb.status === 200){
+            ElMessage({message:'删除成功', type:'success'});
+            getRecords();
+          }else{
+            console.log(rb.msg);
+          }
+        }).catch(error => {
+          console.log(error);
+        })
+      })
 }
 
 // 客户分页

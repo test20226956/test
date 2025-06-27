@@ -1,16 +1,21 @@
 <script setup>
-import {useRoute} from "vue-router";
+import {useRoute, useRouter} from "vue-router";
 import {computed, ref} from "vue";
 import {Expand} from "@element-plus/icons-vue";
+import logo from '@/assets/hospital.svg'
 
 const route = useRoute();
-const breadcrumbs =  computed(()=>{
+const router = useRouter();
+const breadcrumbs = computed(() => {
   return route.meta.breadcrumb || ['首页']
 })
 const isCollapse = ref(true)
 const isCo = () => {
   if (isCollapse.value == false) isCollapse.value = true;
   else isCollapse.value = false;
+}
+const toWelcome = () => {
+  router.push('/welcome')
 }
 
 defineExpose({isCollapse})
@@ -20,7 +25,7 @@ defineExpose({isCollapse})
   <div class="header_bar">
     <!-- 左边图标：20% -->
     <div class="left_icon">
-      <img src="@/assets/logo.png" alt="logo" />
+      <img :src=logo alt="logo" @click="toWelcome"/>
     </div>
 
     <!-- 右边区域：80% -->
@@ -73,11 +78,16 @@ defineExpose({isCollapse})
 }
 
 .left_icon img {
-  height: 40px;
+  margin-top: 20px;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform: scale(1.5);
 }
 
 .right_area {
-  flex:1;
+  margin-left: 10px;
+  flex: 1;
   display: flex;
   justify-content: space-between;
   align-items: center;

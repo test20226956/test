@@ -48,7 +48,7 @@
       <!-- 项目表格 -->
       <div class="main-table">
         <el-table :data="nursingProjectList" style="width: 100%;" border class="table">
-          <el-table-column prop="nursingProjectId" label="项目编号" width="180" align="center"/>
+          <el-table-column type="index" label="#" align="center"/>
           <el-table-column prop="name" label="名称" width="180" align="center"/>
           <el-table-column prop="price" label="价格" width="180" align="center"/>
           <el-table-column prop="period" label="周期" width="180" align="center"/>
