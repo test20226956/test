@@ -10,7 +10,7 @@ const axios = inject('axios');
 
 //页面控制参数
 let currentPage = ref(1);
-let pageSize = ref(3);
+let pageSize = ref(10);
 let total = ref(0);
 let reCurrentPage = ref(1);
 let rePageSize = ref(3);
@@ -21,6 +21,7 @@ const reDialogVisible = ref(false);
 const labelPosition = ref('right')
 
 //数据参数
+const userId = ref(8)
 const searchCust = ref({
   name: '',
 });
@@ -35,20 +36,19 @@ const recordInfo = ref({
   floor: '',
   age: '',
   gender: '',
-  room: '',
-  bed: '',
-  applyUser: '',
+  roomNumber: '',
+  bedNumber: '',
+  fName: '',
   outTime: '',
-  backTime: '',
+  expectedReturnTime: '',
   reason: '',
-  state: '',
-  id: ''
+  customerId: ''
 })
 const recordFormRules = reactive({
   outTime: [
     { required: true, message: '请选择外出时间', trigger: 'blur' },
   ],
-  backTime: [
+  expectedReturnTime: [
     { required: true, message: '请输入预计回院时间', trigger: 'blur' },
     {
       validator: (rule, value, callback) => {
@@ -69,27 +69,24 @@ const recordFormRules = reactive({
 
 const handleSizeChange = (val) => {
   pageSize.value = val;
-  init();
+  searchCustByName();
   console.log(`${val} items per page`)
 }
 const handleCurrentChange = (val) => {
   currentPage.value = val;
-  init();
+  searchCustByName();
   console.log(`current page: ${val}`)
 }
-const handleReSizeChange = (val) => {
-  rePageSize.value = val;
-  getRecordList();
-  console.log(`${val} items per page`)
+const bloodAtter = (row, column, cellValue) =>{
+  return cellValue+'型'
 }
-const handleReCurrentChange = (val) => {
-  reCurrentPage.value = val;
-  getRecordList();
-  console.log(`current page: ${val}`)
+const floorAtter = (row, column, cellValue) =>{
+  return cellValue+'层'
 }
 
 const init = () => {
-  const userid = sessionStorage.getItem('userId');
+  //const userid = sessionStorage.getItem('userId');
+  const userid = userId.value;
   let url = 'GoOutController/showCust';
   const data = {
     userId : userid,
@@ -103,7 +100,7 @@ const init = () => {
       customerList.value = rb.data
       total.value = rb.total
     } else {
-      alert(rb.msg);
+      ElMessage.error(rb.msg);
     }
   }).catch(error => console.log(error));
 }
@@ -111,44 +108,51 @@ init();
 
 const searchCustByName = () => {
   if (!searchCust.value.name) {
-    ElMessage.error('请输入搜索信息')
-    return
-  }
-  const data = {
-    name: searchCust.value.name,
-    pageSize : pageSize.value,
-    pageNum : currentPage.value
-  };
-  axios.get('GoOutController/searchCust',{ params: data }).then(response => {
-    let rb = response.data;
-    if (rb.status == 200) {
-      customerList.value = rb.data;
-      total.value = rb.total
-    }else {
-      alert(rb.msg);
+    init();
+  }else{
+    const userid = userId.value;
+    //const userId = sessionStorage.getItem('userId');
+    if (!searchCust.value.name) {
+      ElMessage.error('请输入搜索信息')
+      return
     }
-  }).catch(error => console.log(error));
+    const data = {
+      userId : userid,
+      name: searchCust.value.name,
+      pageSize : pageSize.value,
+      pageNum : currentPage.value
+    };
+    axios.get('GoOutController/searchCust',{ params: data }).then(response => {
+      let rb = response.data;
+      if (rb.status == 200) {
+        customerList.value = rb.data;
+        total.value = rb.total
+      }else {
+        ElMessage.error(rb.msg);
+      }
+    }).catch(error => console.log(error));
+  }
 }
 
 const checkOutApp = (row) => {
   dialogVisible.value = true;
   recordInfo.value = row;
-  recordInfo.value.applyUser = sessionStorage.getItem('userName');
+  recordInfo.value.fName = "小李";
+  //recordInfo.value.applyUser = sessionStorage.getItem('userName');
 }
 
 const custId = ref('')
 const getCheckOutApp = (row) => {
   reDialogVisible.value = true;
-  custId.value = row.id;
+  custId.value = row.customerId;
+  searchRecord.value.time = '';
   getRecordList();
 }
 
 const getRecordList = () => {
-  const url = 'GoOutController/showGoCheckOutRe';
+  const url = 'GoOutController/showCustGoOutRe';
   const data = {
     customerId: custId.value,
-    pageNum: reCurrentPage.value,
-    pageSize: rePageSize.value
   };
   axios.get(url,{ params: data }).then(response => {
     let rb = response.data;
@@ -185,18 +189,19 @@ const searchRecordByTime = () => {
 }
 const addApply = () => {
   const url = 'GoOutController/addGoOutRe';
-  const userid = sessionStorage.getItem('userId');
+  const userid = userId.value ;
+  //const userid = sessionStorage.getItem('userId');
   const data = {
-    customerId: recordInfo.value.id,
+    customerId: recordInfo.value.customerId,
     outTime: recordInfo.value.outTime,
-    expectedReturnTime: recordInfo.value.backTime,
+    expectedReturnTime: recordInfo.value.expectedReturnTime,
     nurseId: userid,
     reason: recordInfo.value.reason
   };
   axios.post(url,data).then(res =>{
     let data = res.data;
     if (data.status == 200) {
-      ElMessage.success(data.msg);
+      ElMessage.success("申请成功");
       dialogVisible.value = false;
     }else {
       ElMessage.error(data.msg);
@@ -205,18 +210,21 @@ const addApply = () => {
 }
 
 const back = (row) => {
-  const url = 'GoOutController/custGoOutCome';
-  const data = {
-   outRecordId: row.id
-  };
-  axios.post(url,data).then(res =>{
-    let data = res.data;
-    if (data.status == 200) {
-      ElMessage.success(data.msg);
-    }else {
-      ElMessage.error(data.msg);
-    }
-  })
+  if(row.state==='通过'){
+    const outRecordId = row.outRecordId;
+    const url = `GoOutController/custGoOutCome?outRecordId=${outRecordId}`;
+    axios.post(url).then(res =>{
+      let data = res.data;
+      if (data.status == 200) {
+        ElMessage.success(data.msg);
+      }else {
+        ElMessage.error(data.msg);
+      }
+    })
+  }else{
+    ElMessage.error("该申请未通过无法完成该操作")
+  }
+
 }
 </script>
 
@@ -251,18 +259,18 @@ const back = (row) => {
     <div class="table-container">
       <el-table :data="customerList" border style="width: 100%;">
         <el-table-column type="index" label="#" align="center"/>
-        <el-table-column prop="name" label="客户姓名" align="center"/>
+        <el-table-column prop="name" label="客户姓名" width="100" align="center"/>
         <el-table-column prop="age" label="年龄" width="60" align="center"/>
-        <el-table-column prop="gender" label="性别" width="60" align="center"/>
-        <el-table-column prop="id" label="身份证号" width="165" align="center"/>
-        <el-table-column prop="blood" label="血型" align="center"/>
-        <el-table-column prop="contact" label="联系人" align="center"/>
-        <el-table-column prop="tel" label="联系电话" align="center"/>
-        <el-table-column prop="floor" label="楼层" align="center"/>
-        <el-table-column prop="room" label="房间号" align="center"/>
-        <el-table-column prop="checkInTime" label="入住时间" align="center"/>
-        <el-table-column prop="chheckOutTime" label="合同到期时间" align="center"/>
-        <el-table-column label="操作" width="180" align="center">
+        <el-table-column prop="gender" label="性别" width="60" align="center" />
+        <el-table-column prop="identity" label="身份证号" width="180" align="center"/>
+        <el-table-column prop="bloodType" label="血型" align="center" :formatter="bloodAtter"/>
+        <el-table-column prop="fName" label="联系人" align="center"/>
+        <el-table-column prop="tel" label="联系电话" align="center" width="180"/>
+        <el-table-column prop="floor" label="楼层" align="center" :formatter="floorAtter"/>
+        <el-table-column prop="roomNumber" label="房间号" align="center"/>
+        <el-table-column prop="checkInTime" label="入住时间" width="160" align="center"/>
+        <el-table-column prop="endTime" label="合同到期时间" width="160" align="center"/>
+        <el-table-column label="操作" width="240" align="center">
           <template #default="scope">
             <el-button type="warning" size="small" plain @click="checkOutApp(scope.row)">
               <el-icon style="margin-right: 5px;"><Edit /></el-icon> 外出申请
@@ -278,7 +286,7 @@ const back = (row) => {
       <el-pagination
           v-model:current-page="currentPage"
           v-model:page-size="pageSize"
-          :page-sizes="[3,5,7]"
+          :page-sizes="[10,5]"
           layout="total, sizes, prev, pager, next, jumper"
           :total="total"
           @size-change="handleSizeChange"
@@ -286,7 +294,7 @@ const back = (row) => {
       />
     </div>
   </div>
-  <el-dialog title="外出申请审批" v-model="reDialogVisible" width="40%" class="dialog-content">
+  <el-dialog title="外出申请审批" v-model="dialogVisible" width="40%" class="dialog-content">
     <!--    以文字的形式展示record中的信息，不需要输入和修改-->
     <el-row gutter="20" justify="start">
       <el-col :span="9" :offset="3" >
@@ -314,7 +322,7 @@ const back = (row) => {
     </el-row>
     <el-row gutter="20" justify="start">
       <el-col :offset="3" :span="18" >
-        申报人：{{recordInfo.applyUser}}
+        申报人：{{recordInfo.fName}}
       </el-col>
     </el-row>
     <el-form
@@ -322,7 +330,7 @@ const back = (row) => {
         :rules="recordFormRules"
         :label-position="labelPosition"
         label-width="auto">
-      <el-form-item label="外出时间" prop="applyTime">
+      <el-form-item label="外出时间" prop="outTime">
         <el-date-picker
             v-model="recordInfo.outTime"
             type="date"
@@ -331,22 +339,22 @@ const back = (row) => {
             style="width: 60%;"
         />
       </el-form-item>
-      <el-form-item label="预计回院时间" prop="applyTime">
+      <el-form-item label="预计回院时间" prop="expectedReturnTime">
         <el-date-picker
-            v-model="recordInfo.backTime"
+            v-model="recordInfo.expectedReturnTime"
             type="date"
             placeholder="选择预计回院时间"
             value-format="YYYY-MM-DD"
             style="width: 60%;"
         />
       </el-form-item>
-      <el-form-item label="外出原因" prop="checkOutTime">
+      <el-form-item label="外出原因" prop="reason">
         <el-input
             v-model="recordInfo.reason"
             style="width: 240px"
             :rows="2"
             type="textarea"
-            placeholder="Please input"
+            placeholder="请输入外出原因"
         />
       </el-form-item>
     </el-form>
@@ -356,9 +364,9 @@ const back = (row) => {
       </div>
     </template>
   </el-dialog>
-  <el-dialog title="退住申请记录" v-model="reDialogVisible" width="40%" class="dialog-content">
+  <el-dialog title="退住申请记录" v-model="reDialogVisible" width="51%" class="dialog-content">
     <el-row :gutter="20">
-      <el-col :offset="2" :span="5" class="search-col">
+      <el-col :offset="2" :span="12" class="search-col">
         <el-form-item label="外出时间" prop="applyTime">
           <el-date-picker
               v-model="searchRecord.time"
@@ -369,7 +377,7 @@ const back = (row) => {
           />
         </el-form-item>
       </el-col>
-      <el-col :span="2" class="search-col">
+      <el-col :span="4" class="search-col">
         <el-button type="primary" plain @click="searchRecordByTime">
           <el-icon style="margin-right: 5px;">
             <Search/>
@@ -377,20 +385,28 @@ const back = (row) => {
           搜索
         </el-button>
       </el-col>
+      <el-col :span="4" class="search-col">
+        <el-button type="info" plain @click="getRecordList">
+          <el-icon style="margin-right: 5px;">
+            <RefreshRight/>
+          </el-icon>
+          重置
+        </el-button>
+      </el-col>
     </el-row>
-    <el-table :data="recordList" border style="width: 100%;">
-      <el-table-column type="index" label="#" align="center"/>
-      <el-table-column prop="name" label="老人姓名" align="center"/>
-      <el-table-column prop="outTime" label="外出时间" width="100" align="center"/>
-      <el-table-column prop="backTime" label="预计回院时间" align="center" />
-      <el-table-column prop="reason" label="外出原因" align="center"/>
-      <el-table-column prop="checkUser" label="审核人" align="center"/>
-      <el-table-column prop="checkTime" label="审核时间" align="center"/>
-      <el-table-column prop="checkState" label="审核状态" align="center" :formatter="resultAtter"/>
-      <el-table-column label="操作" width="180" align="center">
+    <el-table :data="recordList" border style="width: 100%" height="280px">
+      <el-table-column type="index" label="#" align="center" width="48px"/>
+      <el-table-column prop="name" label="老人姓名" align="center" width="90px"/>
+      <el-table-column prop="outTime" label="外出时间" width="100px" align="center"/>
+      <el-table-column prop="expectedReturnTime" label="预计回院时间" width="110px" align="center" />
+      <el-table-column prop="reason" label="外出原因" width="100px" align="center"/>
+      <el-table-column prop="checkName" label="审核人" width="80px" align="center"/>
+      <el-table-column prop="examineTime" label="审核时间" width="100px"align="center"/>
+      <el-table-column prop="state" label="审核状态" width="90px" align="center" />
+      <el-table-column label="操作" width="120" align="center">
         <template #default="scope">
           <el-button type="warning" size="small" plain @click="back(scope.row)">
-            <el-icon style="margin-right: 5px;"><Edit /></el-icon> 退住申请
+            <el-icon style="margin-right: 5px;"><Edit /></el-icon> 回院登记
           </el-button>
         </template>
       </el-table-column>
