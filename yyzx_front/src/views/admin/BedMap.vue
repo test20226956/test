@@ -2,10 +2,11 @@
   <div class="bed-map-page">
     <!-- 楼层选择 -->
     <div class="bed-map-header">
-      <el-select v-model="selectedFloor" placeholder="请选择楼层" style="width: 240px;">
-        <el-option v-for="floor in floors" :key="floor.value" :label="floor.label" :value="floor.value" />
-      </el-select>
-
+      <el-form-item label="楼层" style="margin-bottom: 0px">
+        <el-select v-model="selectedFloor" placeholder="请选择楼层" style="width: 240px;">
+          <el-option v-for="floor in floors" :key="floor.value" :label="floor.label" :value="floor.value" />
+        </el-select>
+      </el-form-item>
       <div class="bed-map-stats">
         <span><i class="icon bed-icon all" /> 总床数：{{ stats.total }}</span>
         <span><i class="icon bed-icon free" /> 空闲：{{ stats.free }}</span>
@@ -42,45 +43,49 @@
 </template>
 
 <script setup>
-import {ref, nextTick, watch, onMounted} from 'vue'
+import { ref, nextTick, watch, onMounted } from 'vue'
 import axios from 'axios'
-import {ElMessage} from 'element-plus'
+import { ElMessage } from 'element-plus'
 
 const mockBackendResponse = {
   status: 200,
   msg: "查询成功",
   data: [
-    {room_number: '卫生间', loc: "r101"},
-    {room_number: '洗衣房', loc: "r102"},
-    {room_number: 101, loc: "r103", bed_count: 4},
-    {room_number: 102, loc: "r104", bed_count: 4},
-    {room_number: 103, loc: "r105", bed_count: 4},
-    {room_number: 104, loc: "r106", bed_count: 4},
-    {room_number: 105, loc: "r107", bed_count: 4},
+    { room_number: '卫生间', loc: "r101"},
+    { room_number: '洗衣房', loc: "r102"},
+    { room_number: 101, loc: "r103", bed_count: 4 },
+    { room_number: 102, loc: "r104", bed_count: 4 },
+    { room_number: 103, loc: "r105", bed_count: 4 },
+    { room_number: 104, loc: "r106", bed_count: 4 },
+    { room_number: 105, loc: "r107", bed_count: 4 },
     // { room_number: 112, loc: "r112", bed_count: 4 },
-    {room_number: '公共浴室', loc: "r112"},
+    { room_number: '公共浴室', loc: "r112"},
 
-    {room_number: '活动室', loc: "r301"},
-    {room_number: '楼梯间', loc: "r311"},
-    {room_number: '卫生间', loc: "r312"},
+    { room_number: '活动室', loc: "r301"},
+    { room_number: '楼梯间', loc: "r311"},
+    { room_number: '卫生间', loc: "r312"},
 
   ]
 }
 
 const allGridAreas = [
-  'r101', 'r102', 'r103', 'r104', 'r105', 'r106', 'r107', 'r108', 'r109', 'r110', 'r111', 'r112',
+  'r101' ,'r102' ,'r103' ,'r104' ,'r105' ,'r106' ,'r107' ,'r108' ,'r109' ,'r110' ,'r111' ,'r112',
   'corridor',
-  'r301', 'r302', 'r303', 'r304', 'r305', 'r306', 'r307', 'r308', 'r309', 'r311', 'r312',
-  'r409', 'r411',
-  'r509', 'r511',
+  'r301' ,'r302' ,'r303' ,'r304' ,'r305' ,'r306' ,'r307' ,'r308' ,'r309' ,'r311' ,'r312',
+  'r409' ,'r411' ,
+  'r509' ,'r511' ,
 ]
 const isTallRoom = ['r302', 'r303', 'r304', 'r305']
 // 楼层数据
-const selectedFloor = ref(1)
+const selectedFloor = ref(2)
 const floors = [
-  {label: '一楼', value: 1},
-  {label: '二楼', value: 2},
-  {label: '三楼', value: 3}
+  // { label: '一楼', value: 1 },
+  { label: '二楼', value: 2 },
+  { label: '三楼', value: 3 },
+  { label: '四楼', value: 4 },
+  { label: '五楼', value: 5 },
+  { label: '六楼', value: 6 }
+  // { label: '七楼', value: 7 }
 ]
 
 const stats = ref({
@@ -98,7 +103,7 @@ const tooltipStyle = ref({})
 const fetchRooms = async () => {
   try {
     const res = await axios.get('/RoomController/searchRoom', {
-      params: {floor: selectedFloor.value}
+      params: { floor: selectedFloor.value }
     })
 
     const roomMap = new Map()
@@ -114,26 +119,30 @@ const fetchRooms = async () => {
       console.log("查询成功")
       const backendRooms = res.data.data
 
-      mockBackendResponse.data.forEach(r => {
+      backendRooms.forEach(r => {
         const id = r.loc
-        const room_number = r.room_number
-        if (room_number === '卫生间') {
-          roomMap.set(id, {label: '卫生间', type: 'toilet', gridArea: r.loc})
-        } else if (room_number === '洗衣房') {
-          roomMap.set(id, {label: '洗衣房', type: 'laundry', gridArea: r.loc})
-        } else if (room_number === '公共浴室') {
-          roomMap.set(id, {label: '公共浴室', type: 'bathroom', gridArea: r.loc})
-        } else if (room_number === '活动室') {
-          roomMap.set(id, {label: '活动室', type: 'activity', gridArea: r.loc})
-        } else if (room_number === '楼梯间') {
-          roomMap.set(id, {label: '楼梯间', type: 'staircase', gridArea: r.loc})
+        const room_number = r.roomNumber
+        if(room_number === '卫生间'){
+          roomMap.set(id, { label: '卫生间', type: 'toilet', gridArea: r.loc })
+        }else if(room_number === '洗衣房'){
+          roomMap.set(id, { label: '洗衣房', type: 'laundry', gridArea: r.loc })
+        }else if(room_number === '公共浴室'){
+          roomMap.set(id, { label: '公共浴室', type: 'bathroom', gridArea: r.loc })
+        }else if(room_number === '活动室'){
+          roomMap.set(id, { label: '活动室', type: 'activity', gridArea: r.loc })
+        }else if(room_number === '楼梯间'){
+          roomMap.set(id, { label: '楼梯间', type: 'staircase', gridArea: r.loc })
+        }else if(room_number === '护士站'){
+          roomMap.set(id, { label: '护士站', type: 'nurseStation', gridArea: r.loc })
+        }else if(room_number === '公共餐厅'){
+          roomMap.set(id, { label: '公共餐厅', type: 'restaurant', gridArea: r.loc })
         }
         if (!roomMap.has(id)) {
           roomMap.set(id, {
-            label: r.room_number,
+            label: r.roomNumber,
             type: 'room',
             gridArea: r.loc,
-            beds: Array(r.bed_count).fill().map((_, i) => ({
+            beds: Array(r.bedCount).fill().map((_, i) => ({
               name: '空闲',
               status: 'free'
             }))
@@ -166,10 +175,18 @@ const fetchRooms = async () => {
 let hoverTimeout = null
 const hoverRoom = async (room, event) => {
   clearTimeout(hoverTimeout)
-  if (!room || room.type === 'empty' || room.type === 'spacer') {
+
+  const tooltipAllowedTypes = ['room']
+
+  if (!room || !tooltipAllowedTypes.includes(room.type)) {
     hoveredRoom.value = null
     return
   }
+
+  // if (!room || room.type === 'empty' || room.type === 'spacer') {
+  //   hoveredRoom.value = null
+  //   return
+  // }
   // const tempRoom = {
   //   ...room,
   //   beds: []
@@ -194,12 +211,12 @@ const hoverRoom = async (room, event) => {
     const res = await axios.get('/BedController/searchBedByRoomAndFloor', {
       params: {
         roomNumber: room.label,
-        floor: selectedFloor.value
+        floor:selectedFloor.value
       }
     })
 
     if (res.data.status === 200 && Array.isArray(res.data.data)) {
-      if (hoveredRoom.value && hoveredRoom.value.label === room.label) {
+      if(hoveredRoom.value && hoveredRoom.value.label === room.label){
         hoveredRoom.value.beds = res.data.data.map((bed, i) => {
           let status = 'free'
           if (bed.available === 0) status = 'free'
@@ -218,6 +235,7 @@ const hoverRoom = async (room, event) => {
       }
     }
   } catch (err) {
+    ElMessage.error(error || '系统错误，请管理员联系');
     hoveredRoom.value.beds = []
   }
 }
@@ -225,7 +243,7 @@ const hoverRoom = async (room, event) => {
 const fetchBedStats = async () => {
   try {
     const res = await axios.get('/BedController/searchBedSta', {
-      params: {floor: selectedFloor.value}
+      params: { floor: selectedFloor.value }
     })
 
     if (res.data.status === 200 && res.data.data?.floorStats) {
@@ -233,15 +251,15 @@ const fetchBedStats = async () => {
         total: res.data.data.floorStats.total,
         free: res.data.data.floorStats.free,
         occupied: res.data.data.floorStats.taken,
-        out: res.data.data.floorStats.goOut
+        out: res.data.data.floorStats.out
       }
     } else {
       ElMessage.warning(res.data.msg || '床位统计数据获取失败');
-      stats.value = {total: 0, free: 0, occupied: 0, out: 0}
+      stats.value = { total: 0, free: 0, occupied: 0, out: 0 }
     }
   } catch (err) {
     ElMessage.error('请求床位统计信息失败');
-    stats.value = {total: 0, free: 0, occupied: 0, out: 0}
+    stats.value = { total: 0, free: 0, occupied: 0, out: 0 }
   }
 }
 onMounted(() => {
@@ -250,11 +268,12 @@ onMounted(() => {
 })
 
 // onMounted(fetchRooms,fetchBedStats)
-watch(selectedFloor, fetchRooms, fetchBedStats)
+watch(selectedFloor, fetchRooms,fetchBedStats)
 </script>
 
 <style scoped>
 .bed-map-page {
+  width: 100%;
   padding: 16px;
   height: 100%;
   box-sizing: border-box;
@@ -262,15 +281,16 @@ watch(selectedFloor, fetchRooms, fetchBedStats)
   flex-direction: column;
   background-color: #f0f2f5;
   position: relative;
+  overflow-x: auto;
 }
 
 /* 顶部区域 */
 .bed-map-header {
-  flex: 0 0 10%;
+  flex: 0 0 15%;
   border-radius: 12px;
   box-shadow: 0 4px 4px rgba(0, 0, 0, 0.1);
   background-color: white;
-  padding: 16px;
+  padding: 0 30px 0 30px;
   display: flex;
   margin-bottom: 16px;
   //align-content: center;
@@ -296,6 +316,7 @@ watch(selectedFloor, fetchRooms, fetchBedStats)
 
 /* 网格容器 */
 .bed-map-grid {
+  width: 100%;
   flex: 1;
   display: grid;
   align-content: center;
@@ -313,21 +334,20 @@ watch(selectedFloor, fetchRooms, fetchBedStats)
   background: white;
   padding: 16px;
   border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  overflow-x: auto;
+  box-sizing: border-box;
 }
 
 .bed-icon.all {
   background: black;
 }
-
 .bed-icon.free {
   background: green;
 }
-
 .bed-icon.occupied {
   background: darkred;
 }
-
 .bed-icon.out {
   background: dodgerblue;
 }
@@ -344,6 +364,7 @@ watch(selectedFloor, fetchRooms, fetchBedStats)
   background: white;
   cursor: pointer;
   transition: 0.2s;
+  min-width: 70px;
 }
 
 .room-box:hover {
@@ -353,33 +374,92 @@ watch(selectedFloor, fetchRooms, fetchBedStats)
 
 /* 不同类型房间颜色 */
 .room-box.activity {
-  border: 2px solid #fea443;
-  color: #fea443;
+  border: 2px solid #FFCC80;
+  //color: #FFCC80;
   font-weight: bold;
+  background: repeating-linear-gradient(
+      45deg,
+      #FFCC80,
+      #FFCC80 5px,
+      #ffffff 5px,
+      #ffffff 10px
+  );
 }
-
 .room-box.laundry {
-  border: 2px solid purple;
-  color: purple;
+  border: 2px solid thistle;
+  //color: #A5D6A7;
   font-weight: bold;
+  background: repeating-linear-gradient(
+      45deg,
+      thistle,
+      thistle 5px,
+      #ffffff 5px,
+      #ffffff 10px
+  );
 }
-
 .room-box.toilet {
-  border: 2px solid green;
-  color: green;
+  border: 2px solid #B0BEC5;
+  //color: #B0BEC5;
   font-weight: bold;
+  background: repeating-linear-gradient(
+      45deg,
+      #B0BEC5,
+      #B0BEC5 5px,
+      #ffffff 5px,
+      #ffffff 10px
+  );
 }
 
 .room-box.bathroom {
-  border: 2px solid #90cbfb;
-  color: #90cbfb;
+  border: 2px solid #4FC3F7;
+  //color: #4FC3F7;
   font-weight: bold;
+  background: repeating-linear-gradient(
+      45deg,
+      #4FC3F7,
+      #4FC3F7 5px,
+      #ffffff 5px,
+      #ffffff 10px
+  );
 }
 
 .room-box.staircase {
-  border: 2px solid gray;
-  color: gray;
+  border: 2px solid #C8E6C9;
+  //color: #757575;
   font-weight: bold;
+  background: repeating-linear-gradient(
+      45deg,
+      #C8E6C9,
+      #C8E6C9 5px,
+      #ffffff 5px,
+      #ffffff 10px
+  );
+}
+
+.room-box.nurseStation {
+  border: 2px solid #81D4FA;
+  //color: #81D4FA;
+  font-weight: bold;
+  background: repeating-linear-gradient(
+      45deg,
+      #81D4FA,
+      #81D4FA 5px,
+      #ffffff 5px,
+      #ffffff 10px
+  );
+}
+
+.room-box.restaurant {
+  border: 2px solid #FFF59D;
+  //color: #FFF59D;
+  font-weight: bold;
+  background: repeating-linear-gradient(
+      45deg,
+      #FFF59D,
+      #FFF59D 5px,
+      #ffffff 5px,
+      #ffffff 10px
+  );
 }
 
 .room-box.forbidden {
@@ -442,11 +522,9 @@ watch(selectedFloor, fetchRooms, fetchBedStats)
 .tooltip-icon.occupied {
   background-color: darkred;
 }
-
 .tooltip-icon.free {
   background-color: green;
 }
-
 .tooltip-icon.out {
   background-color: dodgerblue;
 }

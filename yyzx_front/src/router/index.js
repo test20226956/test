@@ -21,6 +21,8 @@ import Framework from "@/views/Framework.vue";
 import Login from "@/views/Login.vue";
 import Welcome from "@/views/Welcome.vue";
 
+import {ElMessageBox} from "element-plus";
+
 const routes = [
   // {
   //   path: '/',
@@ -37,12 +39,20 @@ const routes = [
   // }
   {
     path:'/',
-    name:'Framework',
-    component: Framework,
+    redirect: '/login',
+    meta:{
+      requireAdmin: false,
+      requireUser: false,
+    }
   },
   {
     path:'/login',
-    component: Login
+    component: Login,
+    meta:{
+      requireAdmin: false,
+      requireUser: false,
+    }
+
   },
   {
     path:'/framework',
@@ -52,114 +62,154 @@ const routes = [
         path:'/framework/checkIn',
         component:CheckIn,
         meta:{
-          breadcrumb: ['首页','客户管理','入住登记']
+          breadcrumb: ['首页','客户管理','入住登记'],
+          requireAdmin: true,
+          requireUser: false,
         }
       },{
         path:'/framework/checkOut',
         component:CheckOut,
         meta:{
-          breadcrumb: ['首页','客户管理','退住登记']
+          breadcrumb: ['首页','客户管理','退住登记'],
+          requireAdmin: true,
+          requireUser: false,
         }
       },{
         path:'/framework/goOut',
         component:GoOut,
         meta:{
-          breadcrumb: ['首页','客户管理','外出登记']
+          breadcrumb: ['首页','客户管理','外出登记'],
+          requireAdmin: true,
+          requireUser: false,
         }
       },{
         path:'/framework/bedMap',
         component:BedMap,
         meta:{
-          breadcrumb: ['首页','床位管理','床位示意图']
+          breadcrumb: ['首页','床位管理','床位示意图'],
+          requireAdmin: true,
+          requireUser: false,
         }
       },{
         path:'/framework/bedMGMT',
         component:BedMGMT,
         meta:{
-          breadcrumb: ['首页','床位管理','床位管理']
+          breadcrumb: ['首页','床位管理','床位管理'],
+          requireAdmin: true,
+          requireUser: false,
         }
       },{
         path:'/framework/nursingLevel',
         component:NursingLevel,
         meta:{
-          breadcrumb: ['首页','护理管理','护理级别']
+          breadcrumb: ['首页','护理管理','护理级别'],
+          requireAdmin: true,
+          requireUser: false,
         }
       },{
         path:'/framework/nursingPro',
         component:NursingPro,
         meta:{
-          breadcrumb: ['首页','护理管理','护理项目']
+          breadcrumb: ['首页','护理管理','护理项目'],
+          requireAdmin: true,
+          requireUser: false,
         }
       },{
         path:'/framework/custNursingPro',
         component:CustNursingPro,
         meta:{
-          breadcrumb: ['首页','护理管理','客户护理设置']
+          breadcrumb: ['首页','护理管理','客户护理设置'],
+          requireAdmin: true,
+          requireUser: false,
         }
       },{
         path:'/framework/nursingRecord',
         component:NursingRecord,
         meta:{
-          breadcrumb: ['首页','护理管理','护理记录']
+          breadcrumb: ['首页','护理管理','护理记录'],
+          requireAdmin: true,
+          requireUser: false,
         }
       },{
         path:'/framework/dietCalendar',
         component:DietCalendar,
         meta:{
-          breadcrumb: ['首页','膳食管理','膳食日历']
+          breadcrumb: ['首页','膳食管理','膳食日历'],
+          requireAdmin: true,
+          requireUser: false,
         }
       },{
         path:'/framework/custDiet',
         component:CustDiet,
         meta:{
-          breadcrumb: ['首页','膳食管理','膳食配置']
+          breadcrumb: ['首页','膳食管理','膳食配置'],
+          requireAdmin: true,
+          requireUser: false,
         }
       },{
         path:'/framework/serviceCust',
         component:ServiceCust,
         meta:{
-          breadcrumb: ['首页','健康管家','设置服务对象']
+          breadcrumb: ['首页','健康管家','设置服务对象'],
+          requireAdmin: true,
+          requireUser: false,
         }
       },{
         path:'/framework/serviceFocus',
         component:ServiceFocus,
         meta:{
-          breadcrumb: ['首页','健康管家','服务关注']
+          breadcrumb: ['首页','健康管家','服务关注'],
+          requireAdmin: true,
+          requireUser: false,
         }
       },{
         path:'/framework/userMGMT',
         component:UserMGMT,
         meta:{
-          breadcrumb: ['首页','用户管理','基础数据维护']
+          breadcrumb: ['首页','用户管理','基础数据维护'],
+          requireAdmin: true,
+          requireUser: false,
         }
       },{
         path:'/framework/checkOutApply',
         component:CheckOutApply,
         meta:{
-          breadcrumb: ['首页','用户管理','退住申请']
+          breadcrumb: ['首页','用户管理','退住申请'],
+          requireAdmin: false,
+          requireUser: true,
         }
       },{
         path:'/framework/goOutApply',
         component:GoOutApply,
         meta:{
-          breadcrumb: ['首页','用户管理','外出申请']
+          breadcrumb: ['首页','用户管理','外出申请'],
+          requireAdmin: false,
+          requireUser: true,
         }
       },{
         path:'/framework/custNursingRe',
         component:CustNursingRe,
         meta:{
-          breadcrumb: ['首页','健康管家','服务对象护理记录']
+          breadcrumb: ['首页','健康管家','服务对象护理记录'],
+          requireAdmin: false,
+          requireUser: true,
         }
       },{
         path:'/framework/dayNursing',
         component:DayNursing,
         meta:{
-          breadcrumb: ['首页','健康管家','日常护理']
+          breadcrumb: ['首页','健康管家','日常护理'],
+          requireAdmin: false,
+          requireUser: true,
         }
       },{
-        path:'/welcome',
+        path:'/framework/welcome',
         component:Welcome,
-        meta:{breadcrumb:'首页'}
+        meta:{
+          breadcrumb:['首页'],
+          requireAdmin: false,
+          requireUser: false,
+        }
       },
     ]
   }
@@ -168,6 +218,26 @@ const routes = [
 const router = createRouter({
   history: createWebHashHistory(),
   routes
+})
+
+// 路由守卫
+router.beforeEach((to, from, next) => {
+  const userType = sessionStorage.getItem('type');
+  if (to.meta.requireAdmin && userType !== '0') {
+    alert('无权访问');
+    // ElMessageBox.alert('无权限，无法访问', '无权限');
+    // ElMessage({message:'无权限', type:'error'})
+    next(false); // 先立即阻止跳转
+
+    return;
+  }
+
+  if (to.meta.requireUser && userType === '0') {
+    aler('无权访问');
+    next(false); // 先立即阻止跳转
+    return;
+  }
+    next();
 })
 
 export default router

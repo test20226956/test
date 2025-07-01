@@ -48,7 +48,7 @@
       <!-- 项目表格 -->
       <div class="main-table">
         <el-table :data="nursingProjectList" style="width: 100%;" border class="table">
-          <el-table-column type="index" label="#" align="center"/>
+          <el-table-column prop="nursingProjectId" label="项目编号" width="180" align="center"/>
           <el-table-column prop="name" label="名称" width="180" align="center"/>
           <el-table-column prop="price" label="价格" width="180" align="center"/>
           <el-table-column prop="period" label="周期" width="180" align="center"/>
@@ -72,7 +72,7 @@
       <el-pagination
           v-model:current-page="currentPage"
           v-model:page-size="pageSize"
-          :page-sizes="[3,5,7]"
+          :page-sizes="[5,10]"
           layout="total, sizes, prev, pager, next, jumper"
           :total="total"
           @size-change="handleSizeChange"
@@ -244,16 +244,14 @@ const initTable = () => {
   axios.get(url).then(response =>{
     let rb = response.data;
     if(rb.status === 200){
-      ElMessage({message:'表格加载成功', type:'success'});
+      // ElMessage({message:'表格加载成功', type:'success'});
       console.log("获取表格内容");
       nursingProjectList.value = rb.data;
       total.value = rb.total;
     }else{
-      if(rb.msg === '无数据'){
-        ElMessage({message:`无数据`, type:'success'});
-        nursingProjectList.value = rb.data;
-        total.value = rb.total;
-      }
+      ElMessage({message:rb.msg, type:'error'});
+      nursingProjectList.value = rb.data;
+      total.value = rb.total;
       console.log(rb.msg);
     }
   }).catch(error => {
@@ -288,15 +286,13 @@ const searchProjects = () => {
   axios.get(url).then(response => {
     let rb = response.data;
     if(rb.status === 200){
-      ElMessage({message:`搜索到${rb.total}条表项`, type:'success'});
+      // ElMessage({message:`搜索到${rb.total}条表项`, type:'success'});
       nursingProjectList.value = rb.data;
       total.value = rb.total;
     }else{
-      if(rb.msg === '无数据'){
-        ElMessage({message:`无数据`, type:'success'});
-        nursingProjectList.value = rb.data;
-        total.value = rb.total;
-      }
+      ElMessage({message:rb.msg, type:'error'});
+      nursingProjectList.value = rb.data;
+      total.value = rb.total;
       console.log(rb.msg);
     }
   }).catch(error => {
@@ -319,6 +315,7 @@ const submitForm = () => {
             resetForm();
             dialogVisible.value = false;
           } else {
+            ElMessage({message:rb.msg, type:'error'});
             console.log(rb.msg);
           }
         }).catch(error => {
@@ -335,6 +332,7 @@ const submitForm = () => {
             resetForm();
             dialogVisible.value = false;
           } else {
+            ElMessage({message:rb.msg, type:'error'});
             console.log(rb.msg);
           }
         }).catch(error => {
@@ -404,6 +402,7 @@ const deleteProject = (row) => {
             ElMessage({message:'删除成功', type:'success'});
             resetTable();
           }else{
+            ElMessage({message:rb.msg, type:'error'});
             console.log(rb.msg);
           }
         }).catch(error => {
@@ -425,6 +424,7 @@ const handleSizeChange = (val) => {
   console.log(`${val} items per page`);
   initTable();
 }
+
 
 </script>
 

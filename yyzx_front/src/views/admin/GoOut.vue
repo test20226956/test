@@ -209,6 +209,15 @@ const notPass = () =>{
     }
   })
 }
+
+const reset = () => {
+ pageSize.value = 10;
+ currentPage.value = 1;
+ init();
+ searchCheckOut.value.checkOutTime = '';
+ searchCheckOut.value.name = '';
+ searchCheckOut.value.state = '全部';
+}
 </script>
 
 <template>
@@ -216,12 +225,12 @@ const notPass = () =>{
     <!--  上面搜索栏-->
     <div class="search-div">
       <el-row :gutter="20">
-        <el-col :offset="2" :span="5" class="search-col">
+        <el-col :span="8" class="search-col">
           <el-form-item label="老人姓名">
             <el-input v-model="searchCheckOut.name" placeholder="请输入老人姓名"></el-input>
           </el-form-item>
         </el-col>
-        <el-col :span="5" class="search-col">
+        <el-col :span="8" class="search-col">
           <el-form-item label="申请日期">
             <el-date-picker
                 v-model="searchCheckOut.checkOutTime"
@@ -231,7 +240,7 @@ const notPass = () =>{
             />
           </el-form-item>
         </el-col>
-        <el-col :span="2" class="search-col">
+        <el-col :span="3" class="search-col">
           <el-button type="primary" plain @click="searchCheckOutRe">
             <el-icon style="margin-right: 5px;">
               <Search/>
@@ -239,8 +248,8 @@ const notPass = () =>{
             搜索
           </el-button>
         </el-col>
-        <el-col :span="2" class="search-col">
-          <el-button type="info" plain>
+        <el-col :span="3" class="search-col">
+          <el-button type="info" plain @click="reset">
             <el-icon style="margin-right: 5px;">
               <RefreshRight/>
             </el-icon>
@@ -252,16 +261,23 @@ const notPass = () =>{
     <div class="table-container">
       <el-row>
         <!--        新增下拉选择框选择老人类型-->
-        <el-col :span="2" :offset="1" class="table-search">
-          <el-select v-model="searchCheckOut.state" placeholder="请选择老人类型" @change="stateChenge">
-            <el-option label="全部" value="全部"></el-option>
-            <el-option label="已提交" value="已提交"></el-option>
-            <el-option label="通过" value="通过"></el-option>
-            <el-option label="未通过" value="未通过"></el-option>
-          </el-select>
+        <el-col class="table-search" style="margin-bottom: 0px">
+<!--          <el-select v-model="searchCheckOut.state" placeholder="请选择老人类型" @change="stateChenge">-->
+<!--            <el-option label="全部" value="全部"></el-option>-->
+<!--            <el-option label="已提交" value="已提交"></el-option>-->
+<!--            <el-option label="通过" value="通过"></el-option>-->
+<!--            <el-option label="未通过" value="未通过"></el-option>-->
+<!--          </el-select>-->
+          <el-tabs v-model="searchCheckOut.state" type="card" class="state-tabs" @tab-change="stateChenge">
+            <el-tab-pane label="全部" name="全部"></el-tab-pane>
+            <el-tab-pane label="已提交" name="已提交"></el-tab-pane>
+            <el-tab-pane label="通过" name="通过"></el-tab-pane>
+            <el-tab-pane label="未通过" name="未通过"></el-tab-pane>
+          </el-tabs>
+
         </el-col>
       </el-row>
-      <el-table :data="checkOutList" border style="width: 100%;">
+      <el-table :data="checkOutList" border style="width: 100%;overflow-y: auto">
         <el-table-column type="index" label="#" align="center"/>
         <el-table-column prop="name" label="老人姓名" width="150" align="center"/>
         <el-table-column prop="age" label="年龄" width="80" align="center"/>
@@ -281,18 +297,14 @@ const notPass = () =>{
       </el-table>
     </div>
     <div class="page-container">
-      <el-pagination
-          v-model:current-page="currentPage"
-          v-model:page-size="pageSize"
-          :page-sizes="[10,5]"
-          layout="total, sizes, prev, pager, next, jumper"
-          :total="total"
-          @size-change="handleSizeChange"
-          @current-change="handleCurrentChange"
-      />
+      <div class="page-container">
+        <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize" :page-sizes="[10,5]"
+                       layout="total, sizes, prev, pager, next, jumper" :total="total" @size-change="handleSizeChange"
+                       @current-change="handleCurrentChange" />
+      </div>
     </div>
   </div>
-  <el-dialog title="外出申请审批" v-model="reDialogVisible" width="40%" class="dialog-content">
+  <el-dialog title="外出申请审批" v-model="reDialogVisible" width="30%" class="dialog-content">
     <!--    以文字的形式展示record中的信息，不需要输入和修改-->
     <el-row gutter="20" justify="start">
       <el-col :span="9" :offset="3" >
@@ -358,13 +370,18 @@ const notPass = () =>{
   gap: 16px; /* 区块间距，替代 margin-bottom */
   background-color: #f0f2f5;
 }
-.search-div{
+.search-div {
   width: 100%;
-  flex: 0 0 15%; /* 高度为 20% */
-  border: 1px solid ghostwhite;
-  border-radius: 12px; /* 圆角半径，可根据需要调整 */
-  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.1); /* 阴影效果 */
+  flex: 0 0 15%;
+  border-radius: 12px;
+  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.1);
   background-color: white;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 16px;
+  padding: 0 30px 0 30px;
+  box-sizing: border-box;
 }
 .table-container{
   width: 100%;
@@ -372,21 +389,28 @@ const notPass = () =>{
   //border: 2px solid darkblue;
   background-color: white;
   border-radius: 8px;
+  box-sizing: border-box;
+  padding: 0 16px 0 16px;
+  //overflow-y: hidden;
+  overflow-y: auto;
 }
-.page-container{
+.page-container {
   flex: 0 0 10%;
   width: 100%;
   border-radius: 8px;
-  //border: 2px solid darkblue;
-  display: flex;
-  justify-content: center;
   background-color: white;
-
+  display: flex;
+  justify-content: end;
+  //align-content: center;
+  box-sizing: border-box;
+  padding: 0px 16px 0px 16px;
+  //overflow-x: hidden;
+  //flex-direction: column;
 }
 .search-col{
   display: flex;            /* 关键 */
   align-items: center;
-  margin-top: 40px;
+  margin-top: 30px;
 }
 
 .table-search{

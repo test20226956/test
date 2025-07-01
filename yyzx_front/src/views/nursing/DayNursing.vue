@@ -1,5 +1,5 @@
 <script setup>
-import {Delete, Edit, Plus, RefreshRight, Search} from "@element-plus/icons-vue";
+import {Document, Edit, Plus, RefreshRight, Search} from "@element-plus/icons-vue";
 import { ref, reactive, computed, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElLoading,  FormItemProps, FormProps } from 'element-plus'
@@ -18,7 +18,7 @@ const size = ref('default');
 const dialogVisible = ref(false);
 const addDialogVisible = ref(false);
 const labelPosition = ref('right')
-const userId = ref(8);
+const userId = ref(sessionStorage.getItem('userId'));
 
 const bloodAtter = (row, column, cellValue) =>{
   return cellValue+'型'
@@ -190,6 +190,13 @@ const getCareRecord =(row)=>{
   addedRe.value.nursingServiceId = row.nursingServiceId;
   addDialogVisible.value = true;
 }
+
+const reset = () => {
+  searchCust.value.name = '';
+  pageSize.value = 10;
+  currentPage.value = 1;
+  init();
+}
 </script>
 
 <template>
@@ -197,12 +204,12 @@ const getCareRecord =(row)=>{
     <!--  上面搜索栏-->
     <div class="search-div">
       <el-row :gutter="20">
-        <el-col :offset="2" :span="5" class="search-col">
+        <el-col :span="14" class="search-col">
           <el-form-item label="老人姓名">
             <el-input v-model="searchCust.name" placeholder="请输入老人姓名"></el-input>
           </el-form-item>
         </el-col>
-        <el-col :span="2" class="search-col">
+        <el-col :span="5" class="search-col">
           <el-button type="primary" plain @click="searchCustByName">
             <el-icon style="margin-right: 5px;">
               <Search/>
@@ -210,8 +217,8 @@ const getCareRecord =(row)=>{
             搜索
           </el-button>
         </el-col>
-        <el-col :span="2" class="search-col">
-          <el-button type="info" plain>
+        <el-col :span="5" class="search-col">
+          <el-button type="info" plain @click="reset">
             <el-icon style="margin-right: 5px;">
               <RefreshRight/>
             </el-icon>
@@ -233,8 +240,8 @@ const getCareRecord =(row)=>{
         <el-table-column prop="roomNumber" label="房间号" align="center"/>
         <el-table-column label="操作" width="180" align="center">
           <template #default="scope">
-            <el-button type="warning" size="small" plain @click="showCustPro(scope.row)">
-              <el-icon style="margin-right: 5px;"><Edit /></el-icon> 查看护理项目
+            <el-button type="primary" size="small" plain @click="showCustPro(scope.row)">
+              <el-icon style="margin-right: 5px;"><Document /></el-icon> 查看护理项目
             </el-button>
           </template>
         </el-table-column>
@@ -254,7 +261,7 @@ const getCareRecord =(row)=>{
   </div>
   <el-dialog title="查看护理服务" v-model="dialogVisible" v-if="dialogVisible" width="40%" >
     <el-row :gutter="20">
-      <el-col :offset="2" :span="12" class="search-col">
+      <el-col :span="12" class="search-col">
         <el-form-item label="项目名称">
           <el-input v-model="searchPro.name" placeholder="请输入项目名称"></el-input>
         </el-form-item>
@@ -347,7 +354,7 @@ const getCareRecord =(row)=>{
           <el-date-picker
               v-model="addedRe.nursingTime"
               type="date"
-              placeholder="选择入住时间"
+              placeholder="选择护理时间"
               value-format="YYYY-MM-DD"
               style="width: 60%;"
           />
@@ -373,13 +380,18 @@ const getCareRecord =(row)=>{
   gap: 16px; /* 区块间距，替代 margin-bottom */
   background-color: #f0f2f5;
 }
-.search-div{
+.search-div {
   width: 100%;
-  flex: 0 0 15%; /* 高度为 20% */
-  border: 1px solid ghostwhite;
-  border-radius: 12px; /* 圆角半径，可根据需要调整 */
-  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.1); /* 阴影效果 */
+  flex: 0 0 15%;
+  border-radius: 12px;
+  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.1);
   background-color: white;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 16px;
+  padding: 0 30px 0 30px;
+  box-sizing: border-box;
 }
 .table-container{
   width: 100%;
@@ -388,15 +400,18 @@ const getCareRecord =(row)=>{
   background-color: white;
   border-radius: 8px;
 }
-.page-container{
+.page-container {
   flex: 0 0 10%;
   width: 100%;
   border-radius: 8px;
-  //border: 2px solid darkblue;
-  display: flex;
-  justify-content: center;
   background-color: white;
-
+  display: flex;
+  justify-content: end;
+  //align-content: center;
+  box-sizing: border-box;
+  padding: 0px 16px 0px 16px;
+  //overflow-x: hidden;
+  //flex-direction: column;
 }
 .search-col{
   display: flex;            /* 关键 */

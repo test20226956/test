@@ -108,7 +108,7 @@ defineProps({
         :style="{width: isCollapse.value ? '64px' : '200px'}"
         :popper-offset="isCollapse.value ? 0 : -136"
     >
-      <el-sub-menu class="sub-menu" index="1">
+      <el-sub-menu class="sub-menu" index="1" popper-class="menu-popper">
         <template #title>
           <el-icon>
             <User/>
@@ -119,7 +119,7 @@ defineProps({
         <el-menu-item class="item" index="1-2" @click="toCheckOut">退住登记</el-menu-item>
         <el-menu-item class="item" index="1-3" @click="toGoOut">外出登记</el-menu-item>
       </el-sub-menu>
-      <el-sub-menu class="sub-menu" index="2">
+      <el-sub-menu class="sub-menu" index="2" popper-class="menu-popper">
         <template #title>
           <el-icon>
             <OfficeBuilding/>
@@ -129,7 +129,7 @@ defineProps({
         <el-menu-item class="item" index="2-1" @click="toBedMap">床位示意图</el-menu-item>
         <el-menu-item class="item" index="2-2" @click="toBedMGMT">床位管理</el-menu-item>
       </el-sub-menu>
-      <el-sub-menu class="sub-menu" index="3">
+      <el-sub-menu class="sub-menu" index="3" popper-class="menu-popper">
         <template #title>
           <el-icon>
             <Edit/>
@@ -141,7 +141,7 @@ defineProps({
         <el-menu-item class="item" index="3-3" @click="toCustNursingPro">客户护理设置</el-menu-item>
         <el-menu-item class="item" index="3-4" @click="toNursingRecord">护理记录</el-menu-item>
       </el-sub-menu>
-      <el-sub-menu class="sub-menu" index="4">
+      <el-sub-menu class="sub-menu" index="4" popper-class="menu-popper">
         <template #title>
           <el-icon>
             <Bowl/>
@@ -151,7 +151,7 @@ defineProps({
         <el-menu-item class="item" index="4-1" @click="toDietCalendar">膳食日历</el-menu-item>
         <el-menu-item class="item" index="4-2" @click="toCustDiet">膳食配置</el-menu-item>
       </el-sub-menu>
-      <el-sub-menu class="sub-menu" index="5">
+      <el-sub-menu class="sub-menu" index="5" popper-class="menu-popper">
         <template #title>
           <el-icon>
             <FirstAidKit/>
@@ -161,7 +161,7 @@ defineProps({
         <el-menu-item class="item" index="5-1" @click="toServiceFocus">服务关注</el-menu-item>
         <el-menu-item class="item" index="5-2" @click="toServiceCust">设置服务对象</el-menu-item>
       </el-sub-menu>
-      <el-sub-menu class="sub-menu" index="6">
+      <el-sub-menu class="sub-menu" index="6" popper-class="menu-popper">
         <template #title>
           <el-icon>
             <Avatar/>
@@ -183,58 +183,48 @@ defineProps({
 .el-menu-vertical-demo{
   background-color: #e1e9e3;
 }
-
-/* 展开时 - 主菜单默认文字和图标颜色 */
-.el-menu:not(.el-menu--collapse) .el-sub-menu__title {
-  color: #5a6e63;
+:deep(.el-menu-item){
+  background-color: #f0f4f1;
+  transition: background-color 0.3s;
 }
-.el-menu:not(.el-menu--collapse) .el-sub-menu__title .el-icon {
-  color: #5a6e63;
+:deep(.el-menu-item:hover){
+  background-color: #e8eeea; /* 想要的背景色 */
+  transition: background-color 0.3s;
 }
-
-/* 展开时 - 主菜单 hover 效果 */
-.el-menu:not(.el-menu--collapse) .el-sub-menu__title:hover {
-  background-color: #e8eeea;
-  color: #8ea195;
+:deep(.el-menu-item.is-active) {
+  color: #9db7a5;
+  font-weight: bold;         /* 可选：让激活项加粗 */
 }
-.el-menu:not(.el-menu--collapse) .el-sub-menu__title:hover .el-icon {
-  color: #8ea195;
+:deep(.el-sub-menu__title:hover) {
+  background-color: #a5bdac !important;
+  color: white; /* 可选：改变文字颜色 */
 }
-
-/* 展开时 - 主菜单激活状态 */
-.el-menu:not(.el-menu--collapse) .el-sub-menu.is-active > .el-sub-menu__title {
-  background-color: #a6bdad !important;
-  color: #ffffff !important;
-}
-.el-menu:not(.el-menu--collapse) .el-sub-menu.is-active > .el-sub-menu__title .el-icon {
-  color: #ffffff !important;
-}
-
-/* 展开时 - 子菜单默认颜色 */
-.el-menu:not(.el-menu--collapse) .el-menu-item {
-  color: #5a6e63;
-}
-.el-menu:not(.el-menu--collapse) .el-menu-item .el-icon {
-  color: #5a6e63;
-}
-
-/* 展开时 - 子菜单 hover 效果 */
-.el-menu:not(.el-menu--collapse) .el-menu-item:hover {
-  background-color: #e8eeea;
-  color: #8ea195;
-}
-.el-menu:not(.el-menu--collapse) .el-menu-item:hover .el-icon {
-  color: #8ea195;
-}
-
-/* 展开时 - 子菜单激活项样式（可选） */
-.el-menu:not(.el-menu--collapse) .el-menu-item.is-active {
-  background-color: #a6bdad;
+/* 收起状态下，只有当前激活的主菜单，其图标颜色改变 */
+:deep(.el-menu--collapse .el-sub-menu.is-active > .el-sub-menu__title .el-icon) {
   color: #ffffff;
-  font-weight: bold;
 }
-.el-menu:not(.el-menu--collapse) .el-menu-item.is-active .el-icon {
-  color: #ffffff;
+:deep(.el-menu--collapse .el-sub-menu.is-active > .el-sub-menu__title) {
+  background-color: #9db7a5;
+}
+
+.el-menu--popup {
+  .el-submenu__title{
+    background-color: #e1e9e3 !important;
+    color: #a5bdac !important;
+  }
+  .el-menu-item{
+    background-color: #e1e9e3 !important;
+    color: black!important;
+
+  }
+  .el-menu-item:hover {
+    background-color: #e8eeea !important;
+    color: #0B1423 !important;
+  }
+  .el-menu-item.is-active {
+    background-color: #c7d2ce !important;
+    color: #0B1423 !important;
+  }
 }
 .icon {
   position: fixed; /* 固定位置 */

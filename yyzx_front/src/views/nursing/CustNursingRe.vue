@@ -1,5 +1,5 @@
 <script setup>
-import {Edit, RefreshRight, Search} from "@element-plus/icons-vue";
+import {Delete, RefreshRight, Search,Document} from "@element-plus/icons-vue";
 import { ref, reactive, computed, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {ElMessage, ElLoading, FormItemProps, FormProps, ElMessageBox} from 'element-plus'
@@ -16,7 +16,7 @@ const dialogVisible = ref(false);
 const addDialogVisible = ref(false);
 const labelPosition = ref('right')
 
-const userId = ref(8);
+const userId = ref(sessionStorage.getItem('userId'));
 const custId = ref('');
 const searchCust = ref({
   name: '',
@@ -47,6 +47,7 @@ const handleCurrentChange = (val) => {
 }
 
 const init = () => {
+  console.log(sessionStorage)
   const userid = userId.value;
   //const userid = sessionStorage.getItem('userId');
   let url = 'UserController/showUserCust';
@@ -161,6 +162,13 @@ const deleteRecord = (id) => {
     }
   }).catch(error => console.log(error));
 }
+
+const reset = () => {
+  pageSize.value = 10;
+  currentPage.value = 1;
+  init() ;
+  searchUser.value.name = '';
+}
 </script>
 
 <template>
@@ -168,12 +176,12 @@ const deleteRecord = (id) => {
     <!--  上面搜索栏-->
     <div class="search-div">
       <el-row :gutter="20">
-        <el-col :offset="2" :span="5" class="search-col">
+        <el-col :span="14" class="search-col">
           <el-form-item label="老人姓名">
             <el-input v-model="searchCust.name" placeholder="请输入老人姓名"></el-input>
           </el-form-item>
         </el-col>
-        <el-col :span="2" class="search-col">
+        <el-col :span="5" class="search-col">
           <el-button type="primary" plain @click="searchCustByName">
             <el-icon style="margin-right: 5px;">
               <Search/>
@@ -181,8 +189,8 @@ const deleteRecord = (id) => {
             搜索
           </el-button>
         </el-col>
-        <el-col :span="2" class="search-col">
-          <el-button type="info" plain>
+        <el-col :span="5" class="search-col">
+          <el-button type="info" plain @click="reset">
             <el-icon style="margin-right: 5px;">
               <RefreshRight/>
             </el-icon>
@@ -195,8 +203,8 @@ const deleteRecord = (id) => {
       <el-table :data="customerList" border style="width: 100%;">
         <el-table-column type="index" label="#" width="50" align="center"/>
         <el-table-column prop="name" label="客户姓名" align="center"/>
-        <el-table-column prop="age" label="年龄" width="60" align="center"/>
-        <el-table-column prop="gender" label="性别" width="60" align="center"/>
+        <el-table-column prop="age" label="年龄"  align="center"/>
+        <el-table-column prop="gender" label="性别" align="center"/>
         <el-table-column prop="bloodType" label="血型" align="center" :formatter="bloodAtter"/>
         <el-table-column prop="fName" label="联系人" align="center"/>
         <el-table-column prop="tel" label="联系电话" align="center"/>
@@ -204,8 +212,8 @@ const deleteRecord = (id) => {
         <el-table-column prop="roomNumber" label="房间号" align="center"/>
         <el-table-column label="操作" width="180" align="center">
           <template #default="scope">
-            <el-button type="warning" size="small" plain @click="showProRe(scope.row)">
-              <el-icon style="margin-right: 5px;"><Edit /></el-icon> 查看护理记录
+            <el-button type="primary" size="small" plain @click="showProRe(scope.row)">
+              <el-icon style="margin-right: 5px;"><document /></el-icon> 查看护理记录
             </el-button>
           </template>
         </el-table-column>
@@ -263,8 +271,8 @@ const deleteRecord = (id) => {
       <el-table-column prop="time" label="护理时间" width="150" align="center"/>
       <el-table-column label="操作" width="120" align="center">
         <template #default="scope">
-          <el-button type="warning" size="small" plain @click="confirmDelete(scope.row)">
-            <el-icon style="margin-right: 5px;"><Edit /></el-icon> 删除
+          <el-button type="danger" size="small" plain @click="confirmDelete(scope.row)">
+            <el-icon style="margin-right: 5px;"><Delete /></el-icon> 删除
           </el-button>
         </template>
       </el-table-column>
@@ -283,13 +291,18 @@ const deleteRecord = (id) => {
   gap: 16px; /* 区块间距，替代 margin-bottom */
   background-color: #f0f2f5;
 }
-.search-div{
+.search-div {
   width: 100%;
-  flex: 0 0 15%; /* 高度为 20% */
-  border: 1px solid ghostwhite;
-  border-radius: 12px; /* 圆角半径，可根据需要调整 */
-  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.1); /* 阴影效果 */
+  flex: 0 0 15%;
+  border-radius: 12px;
+  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.1);
   background-color: white;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 16px;
+  padding: 0 30px 0 30px;
+  box-sizing: border-box;
 }
 .table-container{
   width: 100%;
@@ -298,15 +311,18 @@ const deleteRecord = (id) => {
   background-color: white;
   border-radius: 8px;
 }
-.page-container{
+.page-container {
   flex: 0 0 10%;
   width: 100%;
   border-radius: 8px;
-  //border: 2px solid darkblue;
-  display: flex;
-  justify-content: center;
   background-color: white;
-
+  display: flex;
+  justify-content: end;
+  //align-content: center;
+  box-sizing: border-box;
+  padding: 0px 16px 0px 16px;
+  //overflow-x: hidden;
+  //flex-direction: column;
 }
 .search-col{
   display: flex;            /* 关键 */

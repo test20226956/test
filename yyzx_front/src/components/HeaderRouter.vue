@@ -15,7 +15,7 @@ const isCo = () => {
   else isCollapse.value = false;
 }
 const toWelcome = () => {
-  router.push('/welcome')
+  router.push('/framework/welcome')
 }
 
 defineExpose({isCollapse})

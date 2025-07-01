@@ -1,5 +1,5 @@
 <script setup>
-import {Delete, Edit, Plus, RefreshRight, Search} from "@element-plus/icons-vue";
+import {Document, Edit, Plus, RefreshRight, Search} from "@element-plus/icons-vue";
 import { ref, reactive, computed, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage} from 'element-plus'
@@ -10,14 +10,14 @@ const axios = inject('axios');
 
 //页面控制参数
 let currentPage = ref(1);
-let pageSize = ref(3);
+let pageSize = ref(10);
 let total = ref(0);
 const size = ref('default');
 const dialogVisible = ref(false);
 const reDialogVisible = ref(false);
 const labelPosition = ref('right')
 
-const userId = ref(8);
+const userId = ref(sessionStorage.getItem('userId'));
 //数据参数
 const searchCust = ref({
   name: '',
@@ -119,10 +119,10 @@ const searchCustByName = () => {
 
 }
 
-const checkOutApp = (row) => {
+const checkOutApp = async (row) => {
   dialogVisible.value = true;
   recordInfo.value = row;
-  recordInfo.value.fName = "小李";
+  recordInfo.value.nName = "小李";
 }
 
 const getCheckOutApp = (row) => {
@@ -163,6 +163,13 @@ const addApply = () => {
     }
   })
 }
+
+const reset = () => {
+  pageSize.value = 10;
+  currentPage.value = 1;
+  init();
+  searchCust.value.name = '';
+}
 </script>
 
 <template>
@@ -170,12 +177,12 @@ const addApply = () => {
     <!--  上面搜索栏-->
     <div class="search-div">
       <el-row :gutter="20">
-        <el-col :offset="2" :span="5" class="search-col">
+        <el-col :span="14" class="search-col">
           <el-form-item label="老人姓名">
             <el-input v-model="searchCust.name" placeholder="请输入老人姓名"></el-input>
           </el-form-item>
         </el-col>
-        <el-col :span="2" class="search-col">
+        <el-col :span="5" class="search-col">
           <el-button type="primary" plain @click="searchCustByName">
             <el-icon style="margin-right: 5px;">
               <Search/>
@@ -183,8 +190,8 @@ const addApply = () => {
             搜索
           </el-button>
         </el-col>
-        <el-col :span="2" class="search-col">
-          <el-button type="info" plain>
+        <el-col :span="5" class="search-col">
+          <el-button type="info" plain @click="reset">
             <el-icon style="margin-right: 5px;">
               <RefreshRight/>
             </el-icon>
@@ -212,8 +219,8 @@ const addApply = () => {
             <el-button type="warning" size="small" plain @click="checkOutApp(scope.row)">
               <el-icon style="margin-right: 5px;"><Edit /></el-icon> 退住申请
             </el-button>
-            <el-button type="danger" size="small" plain @click="getCheckOutApp(scope.row)">
-              <el-icon style="margin-right: 5px;"><Delete /></el-icon> 申请记录
+            <el-button type="primary" size="small" plain @click="getCheckOutApp(scope.row)">
+              <el-icon style="margin-right: 5px;"><Document /></el-icon> 查看申请记录
             </el-button>
           </template>
         </el-table-column>
@@ -231,7 +238,7 @@ const addApply = () => {
       />
     </div>
   </div>
-  <el-dialog title="退住申请" v-model="dialogVisible" width="40%" class="dialog-content">
+  <el-dialog title="退住申请" v-model="dialogVisible" width="35%" class="dialog-content">
     <!--    以文字的形式展示record中的信息，不需要输入和修改-->
     <el-row gutter="20" justify="start">
       <el-col :span="9" :offset="3" >
@@ -246,7 +253,7 @@ const addApply = () => {
         年龄：{{recordInfo.age}}
       </el-col>
       <el-col :span="9" >
-        房间号：{{recordInfo.room}}
+        房间号：{{recordInfo.roomNumber}}
       </el-col>
     </el-row>
     <el-row gutter="20" justify="start">
@@ -254,12 +261,12 @@ const addApply = () => {
         性别：{{recordInfo.gender}}
       </el-col>
       <el-col :span="9" >
-        床位：{{recordInfo.bed}}
+        床位：{{recordInfo.bedNumber}}
       </el-col>
     </el-row>
     <el-row gutter="20" justify="start">
       <el-col :offset="3" :span="18" >
-        申报人：{{recordInfo.fName}}
+        申报人：{{recordInfo.nName}}
       </el-col>
     </el-row>
     <el-row gutter="20" justify="start">
@@ -291,7 +298,7 @@ const addApply = () => {
                 style="width: 300px"
                 :rows="2"
                 type="textarea"
-                placeholder="Please input"
+                placeholder="请输入退住原因"
             />
           </el-form-item>
         </el-form>
@@ -330,30 +337,44 @@ const addApply = () => {
   gap: 16px; /* 区块间距，替代 margin-bottom */
   background-color: #f0f2f5;
 }
-.search-div{
+.search-div {
   width: 100%;
-  flex: 0 0 15%; /* 高度为 20% */
-  border: 1px solid ghostwhite;
-  border-radius: 12px; /* 圆角半径，可根据需要调整 */
-  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.1); /* 阴影效果 */
+  flex: 0 0 15%;
+  border-radius: 12px;
+  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.1);
   background-color: white;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 16px;
+  padding: 0 30px 0 30px;
+  box-sizing: border-box;
 }
-.table-container{
-  width: 100%;
-  flex: 1;
-  //border: 2px solid darkblue;
-  background-color: white;
-  border-radius: 8px;
-}
-.page-container{
+.page-container {
   flex: 0 0 10%;
   width: 100%;
   border-radius: 8px;
-  //border: 2px solid darkblue;
-  display: flex;
-  justify-content: center;
   background-color: white;
-
+  display: flex;
+  justify-content: end;
+  //align-content: center;
+  box-sizing: border-box;
+  padding: 0px 16px 0px 16px;
+  //overflow-x: hidden;
+  //flex-direction: column;
+}
+.page-container {
+  flex: 0 0 10%;
+  width: 100%;
+  border-radius: 8px;
+  background-color: white;
+  display: flex;
+  justify-content: end;
+  //align-content: center;
+  box-sizing: border-box;
+  padding: 0px 16px 0px 16px;
+  //overflow-x: hidden;
+  //flex-direction: column;
 }
 .search-col{
   display: flex;            /* 关键 */
@@ -364,6 +385,16 @@ const addApply = () => {
 .table-search{
   margin-top: 15px;
   margin-bottom: 15px;
+}
+
+.table-container{
+  width: 100%;
+  flex: 1;
+  //border: 2px solid darkblue;
+  background-color: white;
+  border-radius: 8px;
+  padding: 0 16px 0 16px;
+  box-sizing: border-box;
 }
 
 .dialog-footer {

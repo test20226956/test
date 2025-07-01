@@ -5,35 +5,12 @@ import {
 } from '@element-plus/icons-vue'
 import {ElMessage,ElMessageBox} from "element-plus";
 import axios from "axios";
-
-// ---------------------初始化和搜索客户膳食配置------------------------
+// ------------------分页-------------------
 
 let currentPage = ref(1);
 let pageSize = ref(10);
 let total = ref(0);
 // let arr = ref([]);
-
-const arr = ref([
-  {
-    name: '张三',
-    age: 78,
-    gender: '男',
-    roomInfo:'606#A702',
-    flavor: ['低油', '低盐'],
-    restraint: ['不吃辣', '不吃香菜'],
-    comment: '无'
-  },
-  {
-    name: '李四',
-    age: 82,
-    gender: '女',
-    roomInfo:'606#A702',
-    flavor: ['低油', '低盐'],
-    restraint: ['不吃辣', '不吃香菜'],
-    comment: '无'
-  }
-])
-
 const handleSizeChange = (val) => {
   pageSize.value = val;
   init();
@@ -44,10 +21,15 @@ const handleCurrentChange = (val) => {
   init();
   // console.log(`current page: ${val}`)
 }
+
+// ---------------------------初始化膳食配置、搜索和重置----------------------------
+const arr = ref(null)
+
+
 const searchName = ref('');
 
 const init = () => {
-  let url = 'CustDietController/showCustDiet';
+  let url = 'CustDietController/searchCustDiet';
   const data = {
     cur: currentPage.value,
     pageSize: pageSize.value,
@@ -70,7 +52,7 @@ const init = () => {
         const customerDietId = item.customerDiet?.customerDietId || '';
 
         return {
-        //   需要查看JSON格式
+          //   需要查看JSON格式
           customerId,
           name,
           age,
@@ -83,13 +65,19 @@ const init = () => {
         };
       });
       total.value = rb.total;
-    } else if(rb.status === 500 && rb.msg === '无数据') {
+    } else if(rb.status === 500 && rb.msg === '查不到符合条件的记录') {
       arr.value = [];
       total.value = 0;
+      ElMessage({message:rb.msg,type:'warning'})
     }else{
-      alert(rb.msg);
+      arr.value = [];
+      total.value = 0;
+      ElMessage({message:rb.msg,type:'warning'})
+      // alert(rb.msg);
+      // ElMessage({message:''})
     }
   }).catch(error => {
+    ElMessage.error('系统错误，请联系管理员');
     console.error('查询失败：', error);
   });
 }
@@ -98,38 +86,52 @@ const handleSearch = () => {
   currentPage.value = 1; // 搜索时重置为第一页
   init();
 };
-// ---------------------重置搜索------------------------
 
 const handleResetSearch = () => {
   searchName.value = '';
   currentPage.value = 1; // 重置也跳回第一页
   init();
 };
-// ---------------------编辑客户膳食配置------------------------
-const editVisible = ref(false)
 
+// const editDialogRef = ref(null)
+onMounted(() => {
+  init()
+})
+
+// ----------------------------编辑膳食配置--------------------------
+const visible = ref(false)
+const flavorOptions = [
+  { label: '低油', value: '低油' },
+  { label: '低盐', value: '低盐' },
+  { label: '低糖', value: '低糖' }
+];
 const editForm = reactive({
   name: '',
   roomInfo:'',
-  flavor: [],  // ["低油", "低盐"."低糖"]
+  flavor: [],  // ["低油","低盐","低糖"]
   restraint: [],  // 忌口
   comment: ''
 })
 
 const handleEdit = (row) => {
   editForm.customerDietId = row.customerDietId
+  editForm.customerId = row.customerId
   editForm.name = row.name
   editForm.roomInfo = row.roomInfo
   editForm.flavor = [...(row.flavor || [])]
   editForm.restraint = [...(row.restraint || [])]
   editForm.comment = row.comment || ''
-  editVisible.value = true
+  visible.value = true
+}
+const handleCancel = () => {
+  visible.value = false
 }
 
 const handleEditConfirm = () => {
   // 注意edit和reset的post请求可能需要改用qs，具体等后端实现
   const payload = {
     customerDietId: editForm.customerDietId,
+    customerId: editForm.customerId,
     flavor: editForm.flavor.join(','),
     restraint: editForm.restraint.join(','),
     comment: editForm.comment || ''
@@ -138,23 +140,18 @@ const handleEditConfirm = () => {
     const { status, msg } = res.data;
     if (status === 200) {
       ElMessage.success('膳食配置修改成功');
-      editVisible.value = false;
+      visible.value = false;
       init();  // 刷新数据
     } else {
-      ElMessage.error(msg || '修改失败');
+      ElMessage.warning(msg || '修改失败');
     }
   }).catch(() => {
-    ElMessage.error('网络错误，请稍后重试');
+    ElMessage.error('系统错误，请联系管理员');
   });
   // 提交处理逻辑
-  editVisible.value = false
+  visible.value = false
 }
-
-const handleCancel = () => {
-  editVisible.value = false
-}
-// ---------------------重置膳食配置------------------------
-
+// ------------------------重置膳食配置----------------------------
 // 重置：比如清除某些字段或调用后端接口重置配置
 const handleReset = (row) => {
   console.log('重置数据：', row)
@@ -175,34 +172,50 @@ const handleReset = (row) => {
       comment: ''
     };
     // 调用后端接口
-    axios.post('/CustDiet/editCustDiet', payload).then(res => {
+    axios.post('/CustDietController/editCustDiet', payload).then(res => {
       if (res.data.status === 200) {
         ElMessage.success('重置成功');
         init(); // 刷新数据
       } else {
-        ElMessage.error(res.data.msg || '重置失败');
+        ElMessage.warning(res.data.msg || '重置失败');
       }
     }).catch(() => {
-      ElMessage.error('网络错误，重置失败');
+      ElMessage.error('系统错误，请联系管理员');
     });
   }).catch(() => {
     // 用户取消
-    ElMessage.info('已取消')
+    // ElMessage.info('已取消')
   })
 }
 
+// 控制对话框显示
+
+// 表单数据
+
+
+// 取消和确定（方法体可留空）
+
+
+
+
+
+// onMounted(() => {
+//   init();
+// });
 </script>
 
 <template>
   <div class="layout">
     <!--  上面搜索栏-->
     <div class="search-div">
-      <el-input
-          v-model="searchName"
-          placeholder="请输入客户姓名"
-          clearable
-          class="search-input"
-      />
+      <el-form-item label="客户姓名" style="margin-bottom: 0px">
+        <el-input
+            v-model="searchName"
+            placeholder="请输入客户姓名"
+            clearable
+            class="search-input"
+        />
+      </el-form-item>
 
       <el-button type="primary" plain @click="handleSearch">
         <el-icon style="margin-right: 5px;"><Search /></el-icon> 搜索
@@ -210,27 +223,28 @@ const handleReset = (row) => {
       <el-button type="info" plain style="margin-left: 0px" @click="handleResetSearch">
         <el-icon style="margin-right: 5px;"><RefreshRight/></el-icon> 重置
       </el-button>
-<!--      <el-button type="primary" plain @click="handleSearch">搜索</el-button>-->
+      <!--      <el-button type="primary" plain @click="handleSearch">搜索</el-button>-->
     </div>
     <div class="table-container">
       <el-table :data="arr" border style="width: 100%; height:100%;">
-        <el-table-column prop="name" label="客户姓名"  align="center" />
-        <el-table-column prop="age" label="年龄" width="80" align="center" />
-        <el-table-column prop="gender" label="性别" width="80" align="center" />
-        <el-table-column prop="roomInfo" label="房间信息" width="80" align="center" />
-        <el-table-column prop="flavor" label="口味"  align="center" />
-        <el-table-column prop="restraint" label="忌口"  align="center" />
+        <el-table-column type="index" label="#" min-width="50" align="center" />
+        <el-table-column prop="name" label="客户姓名" min-width="160" align="center" />
+        <el-table-column prop="age" label="年龄" min-width="80" align="center" />
+        <el-table-column prop="gender" label="性别" min-width="80" align="center" />
+        <el-table-column prop="roomInfo" label="房间信息" min-width="160" align="center" />
+        <el-table-column prop="flavor" label="口味" min-width="160"  align="center" />
+        <el-table-column prop="restraint" label="忌口" min-width="160"  align="center" />
         <el-table-column prop="comment" label="备注"  align="center" />
-        <el-table-column label="操作" width="180" align="center">
+        <el-table-column label="操作" min-width="180" align="center">
           <template #default="scope">
             <el-button type="warning" size="small" plain @click="handleEdit(scope.row)">
               <el-icon style="margin-right: 5px;"><Edit /></el-icon>编辑
             </el-button>
-<!--            <el-button size="small" @click="handleEdit(scope.row)">编辑</el-button>-->
+            <!--            <el-button size="small" @click="handleEdit(scope.row)">编辑</el-button>-->
             <el-button type="info" size="small" plain @click="handleReset(scope.row)">
               <el-icon style="margin-right: 5px;"><RefreshRight/></el-icon> 重置
             </el-button>
-<!--            <el-button size="small" type="warning" @click="handleReset(scope.row)">重置</el-button>-->
+            <!--            <el-button size="small" type="warning" @click="handleReset(scope.row)">重置</el-button>-->
           </template>
         </el-table-column>
       </el-table>
@@ -239,7 +253,7 @@ const handleReset = (row) => {
       <el-pagination
           v-model:current-page="currentPage"
           v-model:page-size="pageSize"
-          :page-sizes="[3,5,7]"
+          :page-sizes="[5,10]"
           layout="total, sizes, prev, pager, next, jumper"
           :total="total"
           @size-change="handleSizeChange"
@@ -264,9 +278,11 @@ const handleReset = (row) => {
 
         <el-form-item label="口味偏好">
           <el-checkbox-group v-model="editForm.flavor">
-            <el-checkbox label="低油" />
-            <el-checkbox label="低盐" />
-            <el-checkbox label="低糖" />
+            <el-checkbox
+                v-for="item in flavorOptions"
+                :key="item.value"
+                :label="item.value"
+            >{{ item.label }}</el-checkbox>
           </el-checkbox-group>
         </el-form-item>
 
@@ -319,14 +335,14 @@ const handleReset = (row) => {
   justify-content: flex-start;
   align-items: center;
   gap: 16px;
-  //padding: 0 16px 0 16px;
+  padding: 0 30px 0 30px;
   //box-sizing: border-box;
 }
 .search-input {
   width: 240px;
   display: flex;
   align-items: center;
-  margin-left: 16px;
+  //margin-left: 16px;
 }
 .table-container{
   display: flex;
@@ -346,8 +362,8 @@ const handleReset = (row) => {
   background-color: white;
   display: flex;
   justify-content: end;
-  box-sizing: border-box;
-  padding: 0px 16px 0px 16px;
+  //box-sizing: border-box;
+  //padding: 0px 16px 0px 16px;
 }
 
 .diet-dialog .el-form-item {

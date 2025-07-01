@@ -52,7 +52,7 @@
         <!-- 表格 -->
         <div class="main-table">
           <el-table :data="customerNursingList" @row-click="handleRowClick" highlight-current-row>
-            <el-table-column type="index" label="#" align="center"/>
+            <el-table-column prop="customer.customerId" label="客户编号" align="center"></el-table-column>
             <el-table-column prop="customer.name" label="姓名" align="center"></el-table-column>
             <el-table-column prop="age" label="年龄" align="center" v-if="!isDetailView"></el-table-column>
             <el-table-column prop="customer.gender" label="性别" align="center" v-if="!isDetailView">
@@ -177,7 +177,7 @@
         <!-- 表格 -->
         <div class="main-table">
           <el-table :data="recordList" style="overflow-y: auto" max-height="40vh">
-            <el-table-column type="index" label="#" align="center"/>
+            <el-table-column prop="nursingRecord.nursingRecordId" label="记录编号" width="100px" align="center"></el-table-column>
             <el-table-column prop="nursingProject.name" label="项目名称" align="center" width="100px"></el-table-column>
             <el-table-column prop="nursingRecord.count" label="数量" align="center" width="100px" v-if="isDetailView"></el-table-column>
             <el-table-column prop="nursingProject.description" label="内容" align="center" width="100px" v-if="isDetailView"></el-table-column>
@@ -198,7 +198,7 @@
         <el-pagination
             v-model:current-page="recordCurrentPage"
             v-model:page-size="recordPageSize"
-            :page-sizes="[3,5,7]"
+            :page-sizes="[5,10]"
             :layout="recordPaginationLayout"
             :total="recordTotal"
             @size-change="handleRecordSizeChange"
@@ -343,9 +343,10 @@ const initCustomer = () => {
     if(rb.status === 200){
       customerNursingList.value = rb.data;
       customerTotal.value = rb.total;
-      ElMessage({message:'客户表格加载成功', type:'success'});
+      // ElMessage({message:'客户表格加载成功', type:'success'});
       console.log(customerNursingList.value);
     }else{
+      ElMessage({message:rb.msg, type:'error'});
       console.log(rb.msg);
     }
   }).catch(error => {
@@ -360,9 +361,10 @@ const initLevel = () => {
   axios.get(url).then(response => {
     let rb = response.data;
     if(rb.status === 200){
-      console.log("加载护理级别成功！");
+      // console.log("加载护理级别成功！");
       nursingLevelList.value = rb.data;
     }else{
+      ElMessage({message:rb.msg, type:'error'});
       console.log(rb.msg);
     }
   }).catch(error => {
@@ -396,14 +398,12 @@ const searchCustomers = () => {
       if(rb.status === 200){
         customerNursingList.value = rb.data;
         customerTotal.value = rb.total;
-        ElMessage({message:`查找到${customerTotal.value}条数据`, type:'success'});
+        // ElMessage({message:`查找到${customerTotal.value}条数据`, type:'success'});
       }else{
         console.log(rb.msg);
-        if(rb.msg === '查不到符合条件的记录'){
-          ElMessage({message:'无数据', type:'success'});
-          customerNursingList.value = [];
-          customerTotal.value = 0;
-        }
+        ElMessage({message:rb.msg, type:'error'});
+        customerNursingList.value = [];
+        customerTotal.value = 0;
       }
     })
     return;
@@ -414,14 +414,13 @@ const searchCustomers = () => {
     if(rb.status === 200){
       customerNursingList.value = rb.data;
       customerTotal.value = rb.total;
-      ElMessage({message:`查找到${customerTotal.value}条数据`, type:'success'});
+      // ElMessage({message:`查找到${customerTotal.value}条数据`, type:'success'});
     }else{
       console.log(rb.msg);
-      if(rb.msg === '查不到符合条件的记录'){
-        ElMessage({message:'无数据', type:'success'});
-        customerNursingList.value = [];
-        customerTotal.value = 0;
-      }
+      ElMessage({message:rb.msg, type:'error'});
+      customerNursingList.value = [];
+      customerTotal.value = 0;
+
     }
   }).catch(error => {
     console.log(error);
@@ -453,11 +452,12 @@ const getRecords = () => {
     console.log(rb.data);
     if(rb.status === 200){
       recordList.value = rb.data;
-      ElMessage({message:'表格加载成功', type:'success'});
+      // ElMessage({message:'表格加载成功', type:'success'});
       console.log("获取表格内容");
       console.log(recordList.value);
       recordTotal.value = rb.total;
     }else{
+      ElMessage({message:rb.msg, type:'error'});
       recordList.value = [];
       console.log(rb.msg)
     }
@@ -475,16 +475,15 @@ const searchRecords = () => {
   axios.get(url).then(response => {
     let rb = response.data;
     if(rb.status === 200){
-      ElMessage({message:`找到${rb.total}条数据`, type:'success'});
+      // ElMessage({message:`找到${rb.total}条数据`, type:'success'});
       recordTotal.value = rb.total;
       recordList.value = rb.data;
     }else{
       console.log(rb.msg);
-      if(rb.msg === '查不到符合条件的记录'){
-        ElMessage({message:'无数据', type:'success'});
-        recordList.value = [];
-        recordTotal.value = 0;
-      }
+      ElMessage({message:rb.msg, type:'error'});
+      recordList.value = [];
+      recordTotal.value = 0;
+
     }
   }).catch(error => {
     console.log(error);
@@ -518,6 +517,7 @@ const deleteRecord = (row) => {
             ElMessage({message:'删除成功', type:'success'});
             getRecords();
           }else{
+            ElMessage({message:rb.msg, type:'error'});
             console.log(rb.msg);
           }
         }).catch(error => {
@@ -547,6 +547,7 @@ const handleRecordSizeChange = (val) => {
   console.log(`${val} items per record page`);
   getRecords();
 }
+
 
 </script>
 

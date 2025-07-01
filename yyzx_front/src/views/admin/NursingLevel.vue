@@ -63,12 +63,12 @@
                 <!-- 子表格 -->
                 <el-table :data="props.row.projects" size="small"
                           style="justify-content: center; width: 100%;">
-                  <el-table-column type="index" label="#" align="center"/>
+                  <el-table-column prop="nursingProjectId" label="项目编号" width="180" align="center" />
                   <el-table-column prop="name" label="名称" width="180" align="center" />
                   <el-table-column prop="price" label="价格" width="180" align="center" />
                   <el-table-column prop="period" label="周期" width="180" align="center" />
                   <el-table-column prop="time" label="护理频次" width="180" align="center" />
-                  <el-table-column prop="description" label="介绍" align="center" />
+                  <el-table-column prop="description" label="介绍" align="center" show-overflow-tooltip/>
                   <el-table-column label="操作" width="180" align="center">
                     <template v-slot="scope">
                       <el-button type="danger" size="small" plain
@@ -84,7 +84,7 @@
             </template>
           </el-table-column>
           <!-- 主表格列 -->
-          <el-table-column type="index" label="#" align="center"/>
+          <el-table-column prop="nursingLevelId" label="级别编号" width="180" align="center" />
           <el-table-column prop="name" label="名称" width="180" align="center" />
           <el-table-column prop="state" label="状态" width="180" align="center" >
             <template #default="scope">
@@ -113,7 +113,7 @@
     </div>
     <!-- 分页 -->
     <div class="page-container">
-      <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize" :page-sizes="[3,5,7]"
+      <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize" :page-sizes="[5,10]"
                      layout="total, sizes, prev, pager, next, jumper" :total="total" @size-change="handleSizeChange"
                      @current-change="handleCurrentChange" />
     </div>
@@ -176,8 +176,8 @@
 
           <el-col :span="9">
             <el-form label-position="left" label-width="auto">
-              <el-form-item label="级别名称">
-                <el-input v-model="searchAddedProName" placeholder="请输入级别名称"></el-input>
+              <el-form-item label="项目名称">
+                <el-input v-model="searchAddedProName" placeholder="请输入项目名称"></el-input>
               </el-form-item>
             </el-form>
           </el-col>
@@ -405,22 +405,17 @@ const initTable = () => {
   axios.get(url).then(response => {
     let rb = response.data;
     if (rb.status === 200) {
-      ElMessage({
-        message: '表格加载成功',
-        type: 'success'
-      });
+      // ElMessage({
+      //   message: '表格加载成功',
+      //   type: 'success'
+      // });
       console.log("获取表格内容");
       nursingLevelList.value = rb.data;
       total.value = rb.total;
     } else {
-      if(rb.msg === '无数据'){
-        ElMessage({
-          message: `无数据`,
-          type: 'success'
-        });
-        nursingLevelList.value = rb.data;
-        total.value = rb.total;
-      }
+      ElMessage({message:rb.msg, type:'error'});
+      nursingLevelList.value = rb.data;
+      total.value = rb.total;
       console.log(rb.msg);
     }
   }).catch(error => {
@@ -489,8 +484,10 @@ const resetTable = () => {
   total.value = 400;
   currentPage.value = 1;
   pageSize.value = 5;
-  // 表格都收回
-  collapseAll();
+  if(nursingLevelList.value !== null){
+    // 表格都收回
+    collapseAll();
+  }
   initTable();
 }
 
@@ -504,21 +501,17 @@ const searchLevels = () => {
   axios.get(url).then(response => {
     let rb = response.data;
     if (rb.status === 200) {
-      ElMessage({
-        message: `搜索到${rb.total}条表项`,
-        type: 'success'
-      });
+      // ElMessage({
+      //   message: `搜索到${rb.total}条表项`,
+      //   type: 'success'
+      // });
       nursingLevelList.value = rb.data;
       total.value = rb.total;
     } else {
-      if(rb.msg === '无数据'){
-        ElMessage({
-          message: `无数据`,
-          type: 'success'
-        });
-        nursingLevelList.value = rb.data;
-        total.value = rb.total;
-      }
+      ElMessage({message:rb.msg, type:'error'});
+      nursingLevelList.value = rb.data;
+      total.value = rb.total;
+
       console.log(rb.msg);
     }
   }).catch(error => {
@@ -560,6 +553,7 @@ const submitAdd = () => {
           addDialogVisible.value = false;
         }
       }).catch(error => {
+        ElMessage({message:rb.msg, type:'error'});
         console.log(error);
       })
     } else {
@@ -636,11 +630,18 @@ const resetEditForm = () => {
 
 // 搜索已经添加的项目
 const searchAddedPro = () => {
+  let searchName = searchAddedProName.value;
   // 先重置，再搜索
   resetAddedPro();
+  searchAddedProName.value = searchName;
   console.log("搜索已经添加的项目");
-  console.log(searchAddedProName.value);
-  const keyword = searchAddedProName.value.trim().toLowerCase();
+  console.log(searchName);
+  if(editedLevel.value.projects === null || editedLevel.value.projects.length === 0){
+    // 如果根本没有就不需要去找了
+    ElMessage({message:'无数据', type:'info'});
+    return;
+  }
+  const keyword = searchName.trim().toLowerCase();
   editedLevel.value.projects = editedLevel.value.projects.filter(item => {
     const matchName = keyword === '' || item.name.toLowerCase().includes(keyword);
     return matchName;
@@ -657,6 +658,7 @@ const resetAddedPro = () => {
       editedLevel.value.projects = item.projects;
     }
   })
+  searchAddedProName.value = '';
 }
 
 // 打开添加项目对话框
@@ -770,6 +772,7 @@ const submitEdit = () => {
           resetEditForm();
         }else{
           console.log(rb.msg);
+          ElMessage({message:rb.msg, type:'error'});
         }
       }).catch(error => {
         console.log(error);
@@ -791,9 +794,10 @@ const deleteLevel = (row) => {
         axios.post(url).then(response => {
           let rb = response.data;
           if(rb.status === 200){
-
+            ElMessage({message:'删除成功', type:'success'});
             resetTable();
           }else{
+            ElMessage({message:rb.msg, type:'error'});
             console.log(rb.msg);
           }
         }).catch(error => {
@@ -816,6 +820,7 @@ const deleteProjectWhenExpand = (proRow, lvRow) => {
             ElMessage({message:'删除成功', type:'success'});
             resetTable();
           }else{
+            ElMessage({message:rb.msg, type:'error'});
             console.log(rb.msg);
           }
         }).catch(error => {

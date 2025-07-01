@@ -12,20 +12,26 @@ const activeTab = ref('current');
 const arr = ref(null)
 const changeVisible = ref(false)
 const changeForm = reactive({
-  customerId:'',
+  customerId: '',
   name: '',
   gender: '',
   oldBed: '',
-  floor:'',
+  floor: '',
   newBuilding: '606',
   newRoomId: '',
   newRoomNumber: '',
   newBed: '',
   newStartDate: new Date().toISOString().slice(0, 10),
-  newEndDate:''
+  newEndDate: ''
 })
 const availableRooms = ref([])
 const availableBeds = ref([])
+
+const disabledBeforeToday = (date) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // 清除时间部分，仅比较日期
+  return date < today; // 禁用今天之前的日期
+};
 
 const handleFloorChange = () => {
   // changeForm.newRoom = ''
@@ -33,9 +39,12 @@ const handleFloorChange = () => {
   availableRooms.value = []
   availableBeds.value = []
 
+  changeForm.newRoom = '';
+  changeForm.newBed = '';
+
   if (!changeForm.floor) return
 
-  axios.get('/RoomController/searchRoom', { params: { floor: changeForm.floor } })
+  axios.get('/RoomController/searchRoom', {params: {floor: changeForm.floor}})
       .then(res => {
         if (res.data.status === 200) {
           availableRooms.value = res.data.data
@@ -52,12 +61,12 @@ const handleRoomChange = () => {
 
   if (!changeForm.newRoom) return
 
-  axios.get('/BedController/searchFreeBed', { params: { roomId: changeForm.newRoom } })
+  axios.get('/BedController/searchFreeBed', {params: {roomId: changeForm.newRoom}})
       .then(res => {
         if (res.data.status === 200) {
           availableBeds.value = res.data.data
         } else {
-          ElMessage.error(res.data.msg)
+          ElMessage.warning(res.data.msg);
         }
       })
       .catch(() => ElMessage.error('查询床位失败'))
@@ -89,15 +98,14 @@ const init = () => {
     pageSize: pageSize.value,
     state: activeTab.value === 'current' ? 1 : 0,
     name: searchName.value,
-    startTime: date.value ? dayjs(date.value).format('YYYY-MM-DD') : ''
+    startTime: date.value
   };
-  console.log('搜索参数', data);
-  axios.get(url,{ params: data }).then(response => {
+  axios.get(url, {params: data}).then(response => {
     let rb = response.data;
     // console.log('返回数据');
     // console.log(rb);
     if (rb.status == 200) {
-      arr.value = rb.data.map(item=>{
+      arr.value = rb.data.map(item => {
         const customerId = item.customer?.customerId || '';
         const name = item.customer?.name || '未知';
         const gender = item.customer?.gender === 0 ? '男' : '女';
@@ -110,7 +118,7 @@ const init = () => {
         const endTime = item.bedRecord?.endTime || '';
         const bedRecordId = item.bedRecord?.bedRecordId || '';
 
-        return{
+        return {
           customerId,
           name,
           age,
@@ -122,14 +130,15 @@ const init = () => {
         };
       });
       total.value = rb.total;
-    } else if(rb.status === 500 && rb.msg === '无数据') {
+    } else {
+      // alert(rb.msg);
+      ElMessage.warning(rb.msg);
       arr.value = [];
       total.value = 0;
-    }else{
-      alert(rb.msg);
     }
   }).catch(error => {
     console.error('查询失败：', error);
+    ElMessage.error(error);
   });
 }
 
@@ -151,6 +160,7 @@ const handleChange = (row) => {
   changeForm.oldBed = row.bed
   changeForm.newStartDate = dayjs().format('YYYY-MM-DD')
   changeVisible.value = true
+  changeFormRef.value?.clearValidate();
 }
 
 const changeFormRef = ref(null)
@@ -158,14 +168,14 @@ const editFormRef = ref(null)
 
 
 const changeRules = {
-  floor: [{ required: true, message: '请选择楼层', trigger: 'change' }],
-  newRoom: [{ required: true, message: '请选择房号', trigger: 'change' }],
-  newBed: [{ required: true, message: '请选择床号', trigger: 'change' }],
-  newEndDate: [{ required: true, message: '请选择结束日期', trigger: 'change' }]
+  floor: [{required: true, message: '请选择楼层', trigger: 'change'}],
+  newRoom: [{required: true, message: '请选择房号', trigger: 'change'}],
+  newBed: [{required: true, message: '请选择床号', trigger: 'change'}],
+  newEndDate: [{required: true, message: '请选择结束日期', trigger: 'change'}]
 }
 
 const editRules = {
-  endDate: [{ required: true, message: '请选择结束日期', trigger: 'change' }]
+  endDate: [{required: true, message: '请选择结束日期', trigger: 'change'}]
 }
 
 const handleChangeCancel = () => {
@@ -175,7 +185,7 @@ const handleChangeCancel = () => {
 }
 const handleChangeConfirm = () => {
   // 这里只做示例：可在此添加验证和提交逻辑
-  console.log('提交床位调换表单：', { ...changeForm })
+  console.log('提交床位调换表单：', {...changeForm})
   changeFormRef.value.validate((valid) => {
     if (!valid) return;
 
@@ -193,7 +203,7 @@ const handleChangeConfirm = () => {
     axios.post(
         '/BedRecordController/changeBed',
         qs.stringify(payload),
-        { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+        {headers: {'Content-Type': 'application/x-www-form-urlencoded'}}
     ).then(res => {
       if (res.data.status === 200) {
         ElMessage.success('床位调换成功');
@@ -201,7 +211,7 @@ const handleChangeConfirm = () => {
         resetChangeForm();
         init(); // 刷新列表
       } else {
-        ElMessage.error(res.data.msg || '提交失败');
+        ElMessage.warning(res.data.msg || '提交失败');
       }
     }).catch(() => {
       ElMessage.error('网络错误');
@@ -240,7 +250,7 @@ const handleEditCancel = () => {
 }
 
 const handleEditConfirm = () => {
-  console.log('编辑表单提交：', { ...editForm });
+  console.log('编辑表单提交：', {...editForm});
   editFormRef.value.validate((valid) => {
     if (!valid) return;
 
@@ -252,7 +262,7 @@ const handleEditConfirm = () => {
     axios.post(
         '/BedRecordController/editBedRecord',
         qs.stringify(payload), // 转为表单格式
-        { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+        {headers: {'Content-Type': 'application/x-www-form-urlencoded'}}
     )
         .then(res => {
           if (res.data.status === 200) {
@@ -260,11 +270,11 @@ const handleEditConfirm = () => {
             editVisible.value = false;
             init(); // 刷新数据
           } else {
-            ElMessage.error(res.data.msg || '修改失败');
+            ElMessage.warning(res.data.msg || '修改失败');
           }
         })
         .catch(() => {
-          ElMessage.error('网络异常，修改失败');
+          ElMessage.error('系统错误');
         });
   });
 };
@@ -285,48 +295,68 @@ const handleSearch = () => {
 <template>
   <el-row class="layout">
     <div class="search-div">
-      <el-input
-          v-model="searchName"
-          placeholder="请输入客户姓名"
-          clearable
-          style="width: 240px;"
+      <el-form-item label="客户姓名" style="margin-bottom: 0px">
+        <el-input
+            v-model="searchName"
+            placeholder="请输入客户姓名"
+            clearable
+            style="width: 240px;"
 
-      />
-      <el-date-picker
-          v-model="date"
-          type="date"
-          placeholder="筛选该日期后开始使用的记录"
-          style="width: 240px"
-      />
+        />
+      </el-form-item>
+      <el-form-item label="入住日期" style="margin-bottom: 0px">
+        <el-date-picker
+            v-model="date"
+            type="date"
+            placeholder="查询开始日期后的入住信息"
+            style="width: 240px"
+        />
+      </el-form-item>
+
       <el-button type="primary" plain @click="handleSearch">
-        <el-icon style="margin-right: 5px;"><Search /></el-icon> 搜索
+        <el-icon style="margin-right: 5px;">
+          <Search/>
+        </el-icon>
+        搜索
       </el-button>
       <el-button type="info" plain style="margin-left: 0px" @click="handleReset">
-        <el-icon style="margin-right: 5px;"><RefreshRight/></el-icon> 重置
+        <el-icon style="margin-right: 5px;">
+          <RefreshRight/>
+        </el-icon>
+        重置
       </el-button>
     </div>
 
     <div class="table-container">
-      <el-tabs v-model="activeTab" type="card" class="custom-tabs" style="padding-bottom: 0px" @tab-change="handleTabChange">
+      <el-tabs v-model="activeTab" type="card" class="custom-tabs" style="padding-bottom: 0px"
+               @tab-change="handleTabChange">
         <el-tab-pane label="正在使用" name="current"></el-tab-pane>
         <el-tab-pane label="历史使用" name="history"></el-tab-pane>
       </el-tabs>
       <el-table :data="arr" border style="width:100%;flex: 1">
-        <el-table-column type="index" label="#" width="50" align="center" />
-        <el-table-column prop="name" label="客户姓名" width="100" align="center" />
-        <el-table-column prop="age" label="年龄" align="center" />
-        <el-table-column prop="gender" label="性别" align="center" />
-        <el-table-column prop="bed" label="床位信息" align="center" />
-        <el-table-column prop="startTime" label="床位开始使用时间"  align="center" />
-        <el-table-column prop="endTime" label="床位结束使用时间"  align="center" />
+        <el-table-column type="index" label="#" width="50" align="center"/>
+        <el-table-column prop="name" label="客户姓名" width="160" align="center"/>
+        <el-table-column prop="age" label="年龄" width="80" align="center"/>
+        <el-table-column prop="gender" label="性别" width="80" align="center"/>
+        <el-table-column prop="bed" label="床位信息" width="120" align="center"/>
+        <el-table-column prop="startTime" label="床位开始使用时间" min-width="160" align="center"/>
+        <el-table-column prop="endTime" label="床位结束使用时间" min-width="160" align="center"/>
         <el-table-column label="操作" width="180" align="center">
           <template #default="scope">
-            <el-button type="primary" size="small" plain @click="handleChange(scope.row)" :disabled="activeTab !=='current'">
-              <el-icon style="margin-right: 5px;"><Switch /></el-icon>调换
+            <el-button type="primary" size="small" plain @click="handleChange(scope.row)"
+                       :disabled="activeTab !=='current'">
+              <el-icon style="margin-right: 5px;">
+                <Switch/>
+              </el-icon>
+              调换
             </el-button>
             <!--            <el-button size="small" @click="handleEdit(scope.row)">编辑</el-button>-->
-            <el-button type="warning" size="small" plain @click="handleEdit(scope.row) " :disabled="activeTab !=='current'">
-              <el-icon style="margin-right: 5px;"><Edit/></el-icon>修改
+            <el-button type="warning" size="small" plain @click="handleEdit(scope.row) "
+                       :disabled="activeTab !=='current'">
+              <el-icon style="margin-right: 5px;">
+                <Edit/>
+              </el-icon>
+              修改
             </el-button>
             <!--            <el-button size="small" type="warning" @click="handleReset(scope.row)">重置</el-button>-->
           </template>
@@ -337,7 +367,7 @@ const handleSearch = () => {
       <el-pagination
           v-model:current-page="currentPage"
           v-model:page-size="pageSize"
-          :page-sizes="[3,5,7]"
+          :page-sizes="[5,10]"
           layout="total, sizes, prev, pager, next, jumper"
           :total="total"
           @size-change="handleSizeChange"
@@ -352,16 +382,17 @@ const handleSearch = () => {
       width="600px"
       :close-on-click-modal="false"
   >
-    <el-form :model="changeForm" label-width="100px" class="dialog-form" label-position="top" ref="changeFormRef" :rules="changeRules">
+    <el-form :model="changeForm" label-width="100px" class="dialog-form" label-position="top" ref="changeFormRef"
+             :rules="changeRules">
       <el-row :gutter="20">
         <el-col :span="12">
           <el-form-item label="老人姓名：">
-            <el-input v-model="changeForm.name" disabled />
+            <el-input v-model="changeForm.name" disabled/>
           </el-form-item>
         </el-col>
         <el-col :span="12">
           <el-form-item label="旧床位：">
-            <el-input v-model="changeForm.oldBed" disabled />
+            <el-input v-model="changeForm.oldBed" disabled/>
           </el-form-item>
         </el-col>
       </el-row>
@@ -369,13 +400,13 @@ const handleSearch = () => {
       <el-row :gutter="20">
         <el-col :span="12">
           <el-form-item label="性别：">
-            <el-input v-model="changeForm.gender" disabled />
+            <el-input v-model="changeForm.gender" disabled/>
           </el-form-item>
         </el-col>
         <el-col :span="12">
           <el-form-item label="楼层：" prop="floor">
             <el-select v-model="changeForm.floor" placeholder="请选择楼层" @change="handleFloorChange">
-              <el-option v-for="f in [1, 2, 3, 4, 5, 6]" :key="f" :label="`${f}层`" :value="f" />
+              <el-option v-for="f in [2, 3, 4, 5, 6]" :key="f" :label="`${f}层`" :value="f"/>
             </el-select>
           </el-form-item>
         </el-col>
@@ -384,15 +415,17 @@ const handleSearch = () => {
       <el-row :gutter="20">
         <el-col :span="12">
           <el-form-item label="房号：" prop="newRoom">
-            <el-select v-model="changeForm.newRoom" placeholder="请选择房号" :disabled="!changeForm.floor" @change="handleRoomChange">
-              <el-option v-for="room in availableRooms" :key="room.roomId" :label="room.roomNumber" :value="room.roomId" />
+            <el-select v-model="changeForm.newRoom" placeholder="请选择房号" :disabled="!changeForm.floor"
+                       @change="handleRoomChange">
+              <el-option v-for="room in availableRooms" :key="room.roomId" :label="room.roomNumber"
+                         :value="room.roomId"/>
             </el-select>
           </el-form-item>
         </el-col>
         <el-col :span="12">
           <el-form-item label="床号：" prop="newBed">
             <el-select v-model="changeForm.newBed" placeholder="请选择床号" :disabled="!changeForm.newRoom">
-              <el-option v-for="bed in availableBeds" :key="bed.bedId" :label="bed.bedNumber" :value="bed.bedId" />
+              <el-option v-for="bed in availableBeds" :key="bed.bedId" :label="bed.bedNumber" :value="bed.bedId"/>
             </el-select>
           </el-form-item>
         </el-col>
@@ -401,12 +434,13 @@ const handleSearch = () => {
       <el-row :gutter="20">
         <el-col :span="12">
           <el-form-item label="开始日期：" prop="newStartDate">
-            <el-date-picker v-model="changeForm.newStartDate" disabled type="date" style="width: 100%;" />
+            <el-date-picker v-model="changeForm.newStartDate" disabled type="date" style="width: 100%;"/>
           </el-form-item>
         </el-col>
         <el-col :span="12">
           <el-form-item label="结束日期：" prop="newEndDate">
-            <el-date-picker v-model="changeForm.newEndDate" type="date" placeholder="请选择结束日期" style="width: 100%;" />
+            <el-date-picker v-model="changeForm.newEndDate" type="date" placeholder="请选择结束日期"
+                            style="width: 100%;" :disabled-date="disabledBeforeToday"/>
           </el-form-item>
         </el-col>
       </el-row>
@@ -426,33 +460,35 @@ const handleSearch = () => {
       width="600px"
       :close-on-click-modal="false"
   >
-    <el-form :model="editForm" label-width="100px" class="dialog-form" label-position="top" ref="editFormRef" :rules="editRules">
+    <el-form :model="editForm" label-width="100px" class="dialog-form" label-position="top" ref="editFormRef"
+             :rules="editRules">
       <el-row :gutter="20">
         <el-col :span="12">
           <el-form-item label="老人姓名：">
-            <el-input v-model="editForm.name" disabled />
+            <el-input v-model="editForm.name" disabled/>
           </el-form-item>
         </el-col>
         <el-col :span="12">
           <el-form-item label="性别：">
-            <el-input v-model="editForm.gender" disabled />
+            <el-input v-model="editForm.gender" disabled/>
           </el-form-item>
         </el-col>
       </el-row>
 
       <el-form-item label="床位信息：">
-        <el-input v-model="editForm.bedInfo" disabled />
+        <el-input v-model="editForm.bedInfo" disabled/>
       </el-form-item>
 
       <el-row :gutter="20">
         <el-col :span="12">
           <el-form-item label="当前床位使用开始日期：">
-            <el-date-picker v-model="editForm.startDate" disabled type="date" style="width: 100%;" />
+            <el-date-picker v-model="editForm.startDate" disabled type="date" style="width: 100%;"/>
           </el-form-item>
         </el-col>
         <el-col :span="12">
           <el-form-item label="当前床位使用结束日期：" prop="endDate">
-            <el-date-picker v-model="editForm.endDate" type="date" style="width: 100%;" placeholder="请选择床位结束日期"/>
+            <el-date-picker v-model="editForm.endDate" type="date" style="width: 100%;" placeholder="请选择床位结束日期"
+                            :disabled-date="disabledBeforeToday"/>
           </el-form-item>
         </el-col>
       </el-row>
@@ -481,7 +517,8 @@ const handleSearch = () => {
   gap: 16px;
 
 }
-.search-div{
+
+.search-div {
   width: 100%;
   flex: 0 0 15%;
   border-radius: 12px;
@@ -491,10 +528,11 @@ const handleSearch = () => {
   justify-content: flex-start;
   align-items: center;
   gap: 16px;
-  padding: 0 16px 0 16px;
+  padding: 0 30px 0 30px;
   box-sizing: border-box;
 }
-.table-container{
+
+.table-container {
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -509,7 +547,7 @@ const handleSearch = () => {
   min-height: 200px;
 }
 
-.page-container{
+.page-container {
   flex: 0 0 10%;
   width: 100%;
   border-radius: 8px;
@@ -523,7 +561,7 @@ const handleSearch = () => {
   //flex-direction: column;
 }
 
-.changeForm-col{
+.changeForm-col {
   display: flex;
   justify-content: center;
 }

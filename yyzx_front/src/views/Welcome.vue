@@ -31,7 +31,7 @@ const getSrc = (item) =>{
   <div class="down">
     联系我们：1234567890
     <br />
-    邮箱：zytd@notanemial.com
+    邮箱：zytd@notanemail.com
   </div>
 
 </template>

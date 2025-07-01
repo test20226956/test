@@ -280,11 +280,11 @@ const init = () => {
       })
       total.value = rb.total
     } else {
-      alert(rb.msg);
+      ElMessage.error(rb.msg);
     }
   }).catch(error => console.log(error));
 }
-
+init();
 const handleStateChange = () => {
   init()
 }
@@ -340,6 +340,7 @@ const addBntVis = () => {
   addedCust.value = {};
   addedCust.value.type = '自理老人'
   addBed.value = {};
+  addFamily.value = {};
   addedCheckReCord.value = {};
 }
 const addCust = () => {
@@ -404,52 +405,85 @@ const searchCustByName = () => {
 
   if(searchCust.value.name==''&&searchCust.value.startDate==''){
     init();
-  }else{
-    if (!(searchCust.value.name||searchCust.value.startDate)) {
-    ElMessage.error('请输入搜索信息')
-    return
+  }else {
+    if (!(searchCust.value.name || searchCust.value.startDate)) {
+      ElMessage.error('请输入搜索信息')
+      return
     }
-    const type = searchCust.value.state=="护理老人" ? 1 : 0;
+    const type = searchCust.value.state == "护理老人" ? 1 : 0;
     //将时间转为字符串“YYYY-mm-dd”的形式，如果月份和日期是一位数自动补0
-    const year = searchCust.value.startDate.getFullYear()
-    const month = String(searchCust.value.startDate.getMonth() + 1).padStart(2, '0')
-    const day = String(searchCust.value.startDate.getDate()).padStart(2, '0')
-    const startDate = `${year}-${month}-${day}`
-    console.log(startDate)
-    const data = {
-      name: searchCust.value.name,
-      checkInTime: startDate,
-      type: type,
-      pageSize : pageSize.value,
-      pageNum : currentPage.value
+    if (searchCust.value.startDate != '') {
+      const year = searchCust.value.startDate.getFullYear()
+      const month = String(searchCust.value.startDate.getMonth() + 1).padStart(2, '0')
+      const day = String(searchCust.value.startDate.getDate()).padStart(2, '0')
+      const startDate = `${year}-${month}-${day}`
+      console.log(startDate)
+      const data = {
+        name: searchCust.value.name,
+        checkInTime: startDate,
+        type: type,
+        pageSize: pageSize.value,
+        pageNum: currentPage.value
+      };
+      axios.get('CustomerController/searchCust', {params: data}).then(response => {
+        let rb = response.data;
+        if (rb.status == 200) {
+          customerList.value = rb.data.map(item => {
+            return {
+              age: item.age,
+              name: item.customer.name,
+              gender: item.customer.gender === 0 ? '男' : '女',
+              type: item.customer.type === 1 ? '护理老人' : '自理老人',
+              id: item.customer.identity,
+              blood: item.customer.bloodType,
+              tel: item.customer.tel,
+              contact: item.family.name,
+              floor: item.room.floor,
+              room: item.room.roomNumber,
+              bed: item.room.bedCount,
+              checkInTime: item.checkInRecord.checkInTime,
+              checkOutTime: item.checkInRecord.endTime,
+            }
+          })
+          total.value = rb.total
+        } else {
+          ElMessage.error(rb.msg);
+        }
+      }).catch(error => console.log(error));
+    } else {
+      const data = {
+        name: searchCust.value.name,
+        type: type,
+        pageSize: pageSize.value,
+        pageNum: currentPage.value
+      };
+      axios.get('CustomerController/searchCust', {params: data}).then(response => {
+        let rb = response.data;
+        if (rb.status == 200) {
+          customerList.value = rb.data.map(item => {
+            return {
+              age: item.age,
+              name: item.customer.name,
+              gender: item.customer.gender === 0 ? '男' : '女',
+              type: item.customer.type === 1 ? '护理老人' : '自理老人',
+              id: item.customer.identity,
+              blood: item.customer.bloodType,
+              tel: item.customer.tel,
+              contact: item.family.name,
+              floor: item.room.floor,
+              room: item.room.roomNumber,
+              bed: item.room.bedCount,
+              checkInTime: item.checkInRecord.checkInTime,
+              checkOutTime: item.checkInRecord.endTime,
+            }
+          })
+          total.value = rb.total
+        } else {
+          ElMessage.error(rb.msg);
+        }
+      }).catch(error => console.log(error));
     };
-    axios.get('CustomerController/searchCust',{ params: data }).then(response => {
-      let rb = response.data;
-      if (rb.status == 200) {
-        customerList.value = rb.data.map(item => {
-          return {
-            age: item.age,
-            name: item.customer.name,
-            gender: item.customer.gender === 0 ? '男' : '女',
-            type: item.customer.type === 1 ? '护理老人' : '自理老人',
-            id: item.customer.identity,
-            blood: item.customer.bloodType,
-            tel: item.customer.tel,
-            contact: item.family.name,
-            floor: item.room.floor,
-            room: item.room.roomNumber,
-            bed: item.room.bedCount,
-            checkInTime: item.checkInRecord.checkInTime,
-            checkOutTime: item.checkInRecord.endTime,
-          }
-        })
-        total.value = rb.total
-      }else {
-        ElMessage.error(rb.msg);
-      }
-    }).catch(error => console.log(error));
   }
-
 }
 
 //获取本行的信息给编辑框
@@ -523,22 +557,28 @@ const deleteRecord = (id) => {
   });
 };
 
-onMounted(() => {
-  handleStateChange()
-})
+const reset = () => {
+  searchCust.value.name = '';
+  searchCust.value.startDate = '';
+  searchCust.value.state = '自理老人';
+  init();
+  pageSize.value = 10
+  currentPage.value = 1;
+};
+
 </script>
 
 <template>
   <div class="layout">
     <!--  上面搜索栏-->
     <div class="search-div">
-      <el-row :gutter="20">
-        <el-col :offset="2" :span="5" class="search-col">
-          <el-form-item label="老人姓名">
+      <el-row :gutter="20" >
+        <el-col :span="8" class="search-col">
+          <el-form-item label="老人姓名" style="margin-bottom: 0px">
             <el-input v-model="searchCust.name" placeholder="请输入老人姓名"></el-input>
           </el-form-item>
         </el-col>
-        <el-col :span="5" class="search-col">
+        <el-col :span="8" class="search-col" style="margin-bottom: 0px">
           <el-form-item label="入住日期">
             <el-date-picker
                 v-model="searchCust.startDate"
@@ -548,7 +588,7 @@ onMounted(() => {
             />
           </el-form-item>
         </el-col>
-        <el-col :span="2" class="search-col">
+        <el-col :span="3" class="search-col">
           <el-button type="primary" plain @click="searchCustByName">
             <el-icon style="margin-right: 5px;">
               <Search/>
@@ -556,8 +596,8 @@ onMounted(() => {
             搜索
           </el-button>
         </el-col>
-        <el-col :span="2" class="search-col">
-          <el-button type="info" plain>
+        <el-col :span="3" class="search-col">
+          <el-button type="info" plain @click="reset">
             <el-icon style="margin-right: 5px;">
               <RefreshRight/>
             </el-icon>
@@ -567,16 +607,24 @@ onMounted(() => {
       </el-row>
     </div>
     <div class="table-container">
-      <el-row>
+      <el-row style="width: 100%">
         <!--        新增下拉选择框选择老人类型-->
-        <el-col :span="2" :offset="1" class="table-search">
-          <el-select v-model="searchCust.state" placeholder="请选择老人类型" @change="handleStateChange" >
-            <el-option label="自理老人" value="自理老人"></el-option>
-            <el-option label="护理老人" value="护理老人"></el-option>
-          </el-select>
+        <el-col class="table-search" style="flex: 9;margin-bottom: 0px;">
+<!--          <el-select v-model="searchCust.state" placeholder="请选择老人类型" @change="handleStateChange" >-->
+<!--            <el-option label="自理老人" value="自理老人"></el-option>-->
+<!--            <el-option label="护理老人" value="护理老人"></el-option>-->
+<!--          </el-select>-->
+              <el-tabs v-model="searchCust.state" type="card" class="custom-tabs" @tab-change="handleStateChange">
+                <el-tab-pane label="自理老人" name="自理老人"></el-tab-pane>
+                <el-tab-pane label="护理老人" name="护理老人"></el-tab-pane>
+              </el-tabs>
         </el-col>
-        <el-col :span="2" :offset="18" class="table-search">
-          <el-button type="primary" plain @click="addBntVis">
+<!--        <el-tabs v-model="searchCust.state" type="card" class="custom-tabs" @tab-change="handleStateChange">-->
+<!--          <el-tab-pane label="自理老人" name="自理老人"></el-tab-pane>-->
+<!--          <el-tab-pane label="护理老人" name="护理老人"></el-tab-pane>-->
+<!--        </el-tabs>-->
+        <el-col class="table-search" style="display: flex;justify-content: flex-end;flex: 1;">
+          <el-button type="primary" plain @click="addBntVis" style="margin-right: 16px">
             <el-icon style="margin-right: 5px;">
               <Plus/>
             </el-icon>
@@ -855,13 +903,18 @@ onMounted(() => {
   gap: 16px; /* 区块间距，替代 margin-bottom */
   background-color: #f0f2f5;
 }
-.search-div{
+.search-div {
   width: 100%;
-  flex: 0 0 15%; /* 高度为 20% */
-  border: 1px solid ghostwhite;
-  border-radius: 12px; /* 圆角半径，可根据需要调整 */
-  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.1); /* 阴影效果 */
+  flex: 0 0 15%;
+  border-radius: 12px;
+  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.1);
   background-color: white;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 30px 0 30px;
+  box-sizing: border-box;
 }
 .table-container{
   width: 100%;
@@ -869,24 +922,30 @@ onMounted(() => {
   //border: 2px solid darkblue;
   background-color: white;
   border-radius: 8px;
+  padding: 0 16px 0 16px;
+  box-sizing: border-box;
 }
-.page-container{
+.page-container {
   flex: 0 0 10%;
   width: 100%;
   border-radius: 8px;
-  //border: 2px solid darkblue;
-  display: flex;
-  justify-content: center;
   background-color: white;
-
+  display: flex;
+  justify-content: end;
+  //align-content: center;
+  box-sizing: border-box;
+  padding: 0px 16px 0px 16px;
+  //overflow-x: hidden;
+  //flex-direction: column;
 }
 .search-col{
   display: flex;            /* 关键 */
   align-items: center;
-  margin-top: 40px;
+  //margin-top: 40px;
 }
 
 .table-search{
+  //flex: 1;
   margin-top: 15px;
   margin-bottom: 15px;
 }

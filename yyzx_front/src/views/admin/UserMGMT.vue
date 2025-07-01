@@ -197,18 +197,40 @@ init();
 const searchUserByName = () => {
   if(searchUser.value.name == ''&& searchUser.value.employmentDate == '') init();
   else{
-    const data = {
-      userName: searchUser.value.name,
-      employmentDate: searchUser.value.employmentDate,
-      currentPage: currentPage.value,
-      pageSize: pageSize.value
-    };
-    axios.get('/UserController/searchUser', {params: data}).then(res => {
-      userList.value = res.data.data;
-      total.value = res.data.total;
-    }).catch(err => {
-      ElMessage.error(err.message);
-    })
+    if(searchUser.value.employmentDate != ''){
+      const data = {
+        userName: searchUser.value.name,
+        employmentDate: searchUser.value.employmentDate,
+        currentPage: currentPage.value,
+        pageSize: pageSize.value
+      };
+      axios.get('/UserController/searchUser', {params: data}).then(res => {
+        if(res.data.status === 200){
+          userList.value = res.data.data;
+          total.value = res.data.total;
+        }else{
+          ElMessage.error(res.data.msg);
+        }
+      }).catch(err => {
+        ElMessage.error(err.message);
+      })
+    }else{
+      const data = {
+        userName: searchUser.value.name,
+        currentPage: currentPage.value,
+        pageSize: pageSize.value
+      };
+      axios.get('/UserController/searchUser', {params: data}).then(res => {
+        if(res.data.status === 200){
+          userList.value = res.data.data;
+          total.value = res.data.total;
+        }else{
+          ElMessage.error(res.data.msg);
+        }
+      }).catch(err => {
+        ElMessage.error(err.message);
+      })
+    }
   }
 }
 const addBntVis = () => {
@@ -268,6 +290,14 @@ const editUser = () => {
     }
   })
 }
+const reset = () => {
+  pageSize.value = 10;
+  currentPage.value = 1;
+  init();
+  searchUser.value.type = '全部';
+  searchUser.value.name = '';
+  searchUser.value.employmentDate = '';
+}
 </script>
 
 <template>
@@ -275,12 +305,12 @@ const editUser = () => {
     <!--  上面搜索栏-->
     <div class="search-div">
       <el-row :gutter="20">
-        <el-col :offset="2" :span="5" class="search-col">
+        <el-col :span="8" class="search-col">
           <el-form-item label="用户姓名">
             <el-input v-model="searchUser.name" placeholder="请输入用户姓名"></el-input>
           </el-form-item>
         </el-col>
-        <el-col :span="5" class="search-col">
+        <el-col :span="8" class="search-col">
           <el-form-item label="入职日期">
             <el-date-picker
                 v-model="searchUser.employmentDate"
@@ -291,7 +321,7 @@ const editUser = () => {
             />
           </el-form-item>
         </el-col>
-        <el-col :span="2" class="search-col">
+        <el-col :span="3" class="search-col">
           <el-button type="primary" plain @click="searchUserByName">
             <el-icon style="margin-right: 5px;">
               <Search/>
@@ -299,8 +329,8 @@ const editUser = () => {
             搜索
           </el-button>
         </el-col>
-        <el-col :span="2" class="search-col">
-          <el-button type="info" plain>
+        <el-col :span="3" class="search-col">
+          <el-button type="info" plain @click="reset">
             <el-icon style="margin-right: 5px;">
               <RefreshRight/>
             </el-icon>
@@ -312,7 +342,7 @@ const editUser = () => {
     <div class="table-container">
       <el-row>
         <!--        新增下拉选择框选择老人类型-->
-        <el-col :span="2" :offset="18" class="table-search">
+        <el-col :span="2" :offset="22" class="table-search">
           <el-button type="primary" plain @click="addBntVis">
             <el-icon style="margin-right: 5px;">
               <Plus/>
@@ -343,7 +373,7 @@ const editUser = () => {
       <el-pagination
           v-model:current-page="currentPage"
           v-model:page-size="pageSize"
-          :page-sizes="[10,5]"
+          :page-sizes="[5,10]"
           layout="total, sizes, prev, pager, next, jumper"
           :total="total"
           @size-change="handleSizeChange"
@@ -431,13 +461,18 @@ const editUser = () => {
   gap: 16px; /* 区块间距，替代 margin-bottom */
   background-color: #f0f2f5;
 }
-.search-div{
+.search-div {
   width: 100%;
-  flex: 0 0 15%; /* 高度为 20% */
-  border: 1px solid ghostwhite;
-  border-radius: 12px; /* 圆角半径，可根据需要调整 */
-  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.1); /* 阴影效果 */
+  flex: 0 0 15%;
+  border-radius: 12px;
+  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.1);
   background-color: white;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 16px;
+  padding: 0 30px 0 30px;
+  box-sizing: border-box;
 }
 .table-container{
   width: 100%;
@@ -446,20 +481,23 @@ const editUser = () => {
   background-color: white;
   border-radius: 8px;
 }
-.page-container{
+.page-container {
   flex: 0 0 10%;
   width: 100%;
   border-radius: 8px;
-  //border: 2px solid darkblue;
-  display: flex;
-  justify-content: center;
   background-color: white;
-
+  display: flex;
+  justify-content: end;
+  //align-content: center;
+  box-sizing: border-box;
+  padding: 0px 16px 0px 16px;
+  //overflow-x: hidden;
+  //flex-direction: column;
 }
 .search-col{
   display: flex;            /* 关键 */
   align-items: center;
-  margin-top: 40px;
+  margin-top: 30px;
 }
 
 .table-search{

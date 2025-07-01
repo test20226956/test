@@ -14,6 +14,7 @@
             <el-select
                 v-model="searchedCustomer.nursingLevelId"
                 placeholder="请选择护理级别"
+                style="width: 240px;"
             >
               <el-option
                   v-for="level in searchableLevelList"
@@ -42,7 +43,7 @@
       <!-- 项目表格 -->
       <div class="main-table">
         <el-table :data="customerNursingList">
-          <el-table-column type="index" label="#" align="center"/>
+          <el-table-column prop="customer.customerId" label="客户编号" align="center"></el-table-column>
           <el-table-column prop="customer.name" label="姓名" align="center"></el-table-column>
           <el-table-column prop="age" label="年龄" align="center"></el-table-column>
           <el-table-column prop="customer.gender" label="性别" align="center">
@@ -79,7 +80,7 @@
       <el-pagination
           v-model:current-page="currentPage"
           v-model:page-size="pageSize"
-          :page-sizes="[3,5,7]"
+          :page-sizes="[5,10]"
           layout="total, sizes, prev, pager, next, jumper"
           :total="total"
           @size-change="handleSizeChange"
@@ -277,7 +278,7 @@ const initCustomer = () => {
     if(rb.status === 200){
       customerNursingList.value = rb.data;
       total.value = rb.total;
-      ElMessage({message:'客户表格加载成功', type:'success'});
+      // ElMessage({message:'客户表格加载成功', type:'success'});
       console.log(customerNursingList.value);
     }else{
       console.log(rb.msg);
@@ -293,7 +294,7 @@ const initLevel = () => {
   axios.get(url).then(response => {
     let rb = response.data;
     if(rb.status === 200){
-      console.log("加载护理级别成功！");
+      // console.log("加载护理级别成功！");
       nursingLevelList.value = rb.data;
     }else{
       console.log(rb.msg);
@@ -319,14 +320,13 @@ const searchCustomers = () => {
       if(rb.status === 200){
         customerNursingList.value = rb.data;
         total.value = rb.total;
-        ElMessage({message:`查找到${total.value}条数据`, type:'success'});
+        // ElMessage({message:`查找到${total.value}条数据`, type:'success'});
       }else{
         console.log(rb.msg);
-        if(rb.msg === '查不到符合条件的记录'){
-          ElMessage({message:'无数据', type:'success'});
-          customerNursingList.value = [];
-          total.value = 0;
-        }
+
+        ElMessage({message:'查不到符合条件的记录', type:'error'});
+        customerNursingList.value = [];
+        total.value = 0;
       }
     })
     return;
@@ -337,14 +337,14 @@ const searchCustomers = () => {
     if(rb.status === 200){
       customerNursingList.value = rb.data;
       total.value = rb.total;
-      ElMessage({message:`查找到${total.value}条数据`, type:'success'});
+      // ElMessage({message:`查找到${total.value}条数据`, type:'success'});
     }else{
       console.log(rb.msg);
-      if(rb.msg === '查不到符合条件的记录'){
-        ElMessage({message:'无数据', type:'success'});
-        customerNursingList.value = [];
-        total.value = 0;
-      }
+
+      ElMessage({message:rb.msg, type:'error'});
+      customerNursingList.value = [];
+      total.value = 0;
+
     }
   }).catch(error => {
     console.log(error);
@@ -373,6 +373,7 @@ const deleteLevel = (row) => {
             resetTable();
           }else{
             console.log(rb.msg);
+            ElMessage({message:rb.msg, type:'error'});
           }
         }).catch(error => {
           console.log(error);
@@ -398,6 +399,7 @@ const setDialogClose = () => {
         // 重置表单
         setting.value.customerId = null;
         setting.value.nursingLevelId = null;
+        nursingServiceList.value = [];
       }).catch((error) => {
     console.log(error);
   })
@@ -483,6 +485,7 @@ const addLevel = () => {
           }
           initTable();
         }else{
+          ElMessage({message:rb.msg, type:'error'});
           console.log(rb.msg);
         }
       }).catch(error => {

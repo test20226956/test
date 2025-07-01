@@ -105,6 +105,33 @@ defineProps({
   background-color: #a5bdac !important;
   color: white; /* 可选：改变文字颜色 */
 }
+/* 收起状态下，只有当前激活的主菜单，其图标颜色改变 */
+:deep(.el-menu--collapse .el-sub-menu.is-active > .el-sub-menu__title .el-icon) {
+  color: #ffffff;
+}
+:deep(.el-menu--collapse .el-sub-menu.is-active > .el-sub-menu__title) {
+  background-color: #9db7a5;
+}
+
+.el-menu--popup {
+  .el-submenu__title{
+    background-color: #e1e9e3 !important;
+    color: #a5bdac !important;
+  }
+  .el-menu-item{
+    background-color: #e1e9e3 !important;
+    color: black!important;
+
+  }
+  .el-menu-item:hover {
+    background-color: #e8eeea !important;
+    color: #0B1423 !important;
+  }
+  .el-menu-item.is-active {
+    background-color: #c7d2ce !important;
+    color: #0B1423 !important;
+  }
+}
 .icon {
   position: fixed; /* 固定位置 */
   top: 18px;       /* 距离顶部30px */
