@@ -11,6 +11,17 @@ const axios = inject('axios');
 const breadcrumbs = computed(() => {
   return route.meta.breadcrumb || ['首页']
 })
+
+//是否是护工
+const isNurse = computed(() => {
+  let role = sessionStorage.getItem('type');
+  if(role === "1"){
+    return true;
+  }else{
+    return false;
+  }
+})
+
 const isCollapse = ref(true)
 const dialogVisible = ref(false) // 新增对话框显示状态
 const isCo = () => {
@@ -31,6 +42,10 @@ const callList = ref([]);
 const callNumber = ref(0);
 const userId = ref(sessionStorage.getItem('userId'))
 const getNews = () => {
+  let role = sessionStorage.getItem("type");
+  if(role === "0"){
+    return;
+  }
   let url = 'CustomerController/listCall';
   const data = {
     userId: userId.value,
@@ -100,7 +115,7 @@ defineExpose({isCollapse})
 
       <!-- 头像靠右 -->
       <div class="right_avatar">
-        <div class="right_news"  @click="showMessages">
+        <div class="right_news"  @click="showMessages" v-if="isNurse">
           <el-popover
               class="box-item"
               title="我的消息"
