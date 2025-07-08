@@ -7,10 +7,14 @@
         <div class="diet-search-bar">
           <el-date-picker v-model="date" type="date" placeholder="请选择日期" />
           <el-button type="primary" plain @click="handleSearch">
-            <el-icon><Search /></el-icon> 搜索
+            <el-icon>
+              <Search />
+            </el-icon> 搜索
           </el-button>
           <el-button type="primary" plain @click="handleAdd" style="margin-left: 0px">
-            <el-icon><Plus /></el-icon> 添加膳食安排
+            <el-icon>
+              <Plus />
+            </el-icon> 添加膳食安排
           </el-button>
         </div>
 
@@ -30,26 +34,35 @@
             <div class="meal-section" v-for="(data, meal) in arrangedMeals" :key="meal">
               <h4 style="width: 100%;text-align: left;">{{ mealNames[meal] }}</h4>
               <el-table :data="data" border size="small" style="width: 100%;">
-                <el-table-column type="index" label="#" width="50" align="center" />
-                <el-table-column prop="mealName" label="菜品" align="center" />
-                <el-table-column label="状态" width="100" align="center">
-                  <template #default="scope">
-                    <el-switch
-                        :model-value="scope.row.state"
-                        :active-value="1"
-                        :inactive-value="0"
-                        :disabled="scope.row.mealState === 0 || dayjs(scope.row.date).isBefore(dayjs().startOf('day'))"
-                        @change="(val) => handleToggleState(val, scope.row)"
-                    />
+                <!-- <el-table-column type="index" label="#" min-width="30px" align="center" /> -->
+                <el-table-column label="图片" min-width="120" align="center">
+                  <template #default="{ row }">
+                    <img v-if="row.mealImg" :src="row.mealImg" alt="图片"
+                         style="width: 80px; height: 80px; object-fit: cover; border-radius: 4px;" />
+                    <span v-else style="color: #ccc;">暂无图片</span>
                   </template>
                 </el-table-column>
-                <el-table-column label="操作" width="160" align="center">
+                <el-table-column prop="mealName" label="菜品" min-width="150" align="center" />
+                <el-table-column label="类别" align="center" min-width="50" :formatter="formatCategory" />
+                <el-table-column label="状态" width="100" align="center">
                   <template #default="scope">
-                    <el-button type="warning" size="small" plain @click="handleChange(scope.row)" :disabled="scope.row.state === 1 || dayjs(scope.row.date).isBefore(dayjs().startOf('day'))">
-                      <el-icon style="margin-right: 5px;"><Edit /></el-icon> 调换
+                    <el-switch :model-value="scope.row.state" :active-value="1" :inactive-value="0"
+                               :disabled="scope.row.mealState === 0 || dayjs(scope.row.date).isBefore(dayjs().startOf('day'))"
+                               @change="(val) => handleToggleState(val, scope.row)" />
+                  </template>
+                </el-table-column>
+                <el-table-column label="操作" min-width="160" align="center">
+                  <template #default="scope">
+                    <el-button type="warning" size="small" plain @click="handleChange(scope.row)"
+                               :disabled="scope.row.state === 1 || dayjs(scope.row.date).isBefore(dayjs().startOf('day'))">
+                      <el-icon style="margin-right: 5px;">
+                        <Edit />
+                      </el-icon> 调换
                     </el-button>
                     <el-button type="danger" size="small" plain @click="handleDelete(scope.row)">
-                      <el-icon style="margin-right: 5px;"><Delete /></el-icon> 删除
+                      <el-icon style="margin-right: 5px;">
+                        <Delete />
+                      </el-icon> 删除
                     </el-button>
                   </template>
                 </el-table-column>
@@ -64,18 +77,16 @@
         <div class="diet-right-header">
           <el-input v-model="dishSearch" placeholder="请输入膳食名称" class="diet-search-input" clearable />
           <el-button type="primary" plain @click="handleMealSearch" style="margin-left: 0px">
-            <el-icon style="margin-right: 5px;"><Search /></el-icon> 搜索
+            <el-icon style="margin-right: 5px;">
+              <Search />
+            </el-icon> 搜索
           </el-button>
           <el-button type="primary" plain @click="handleMealAdd" style="margin-left: 0px">
-            <el-icon style="margin-right: 5px;"><Plus /></el-icon> 添加膳食
+            <el-icon style="margin-right: 5px;">
+              <Plus />
+            </el-icon> 添加膳食
           </el-button>
         </div>
-
-        <!--        <el-tabs v-model="activeMealType" type="card" class="diet-right-tabs">-->
-        <!--          <el-tab-pane label="早餐" name="breakfast" />-->
-        <!--          <el-tab-pane label="午餐" name="lunch" />-->
-        <!--          <el-tab-pane label="晚餐" name="dinner" />-->
-        <!--        </el-tabs>-->
 
         <el-tabs v-model="activeCategory" type="card" class="diet-right-tabs">
           <el-tab-pane label="主食" name="staple" />
@@ -92,10 +103,14 @@
           <el-table-column label="操作" width="160" align="center">
             <template #default="scope">
               <el-button type="warning" size="small" plain @click="handleMealEdit(scope.row)">
-                <el-icon style="margin-right: 5px;"><Edit /></el-icon> 编辑
+                <el-icon style="margin-right: 5px;">
+                  <Edit />
+                </el-icon> 编辑
               </el-button>
               <el-button type="danger" size="small" plain @click="handleMealDelete(scope.row)">
-                <el-icon style="margin-right: 5px;"><Delete /></el-icon> 删除
+                <el-icon style="margin-right: 5px;">
+                  <Delete />
+                </el-icon> 删除
               </el-button>
             </template>
           </el-table-column>
@@ -103,26 +118,31 @@
       </div>
     </div>
   </div>
-  <el-dialog
-      v-model="editMealVisible"
-      title="膳食编辑"
-      width="400px"
-      :close-on-click-modal="false"
-  >
+  <el-dialog v-model="editMealVisible" title="膳食编辑" width="400px" :close-on-click-modal="false" @close="handleEditMealCancel">
     <el-form :model="editMealForm" label-width="80px" label-position="top" ref="editFormRef" :rules="editRules">
-      <el-form-item label="类别："prop="type">
+      <el-form-item label="类别：" prop="type">
         <el-select v-model="editMealForm.type" placeholder="请选择类别" style="width: 100%;">
-          <el-option
-              v-for="item in categoryOptions"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value"
-          />
+          <el-option v-for="item in categoryOptions" :key="item.value" :label="item.label"
+                     :value="item.value" />
         </el-select>
       </el-form-item>
 
       <el-form-item label="名称：" prop="name">
         <el-input v-model="editMealForm.name" placeholder="请输入名称" />
+      </el-form-item>
+
+      <el-form-item label="膳食图片" prop="mealImg">
+        <el-upload
+            action="#"
+            list-type="picture-card"
+            :file-list="editFileList"
+            :on-remove="handleEditImageRemove"
+            :http-request="handleEditHttpRequest"
+            :limit="1"
+            :before-upload="beforeUploadImage"
+            accept="image/png,image/jpeg,image/jpg">
+          <i class="el-icon-plus" v-if="editFileList.length < 1"></i>
+        </el-upload>
       </el-form-item>
     </el-form>
 
@@ -134,32 +154,20 @@
     </template>
   </el-dialog>
 
-  <el-dialog
-      v-model="changeDietVisible"
-      title="调换膳食"
-      width="400px"
-      :close-on-click-modal="false"
-  >
-    <el-form :model="changeDietForm" label-width="80px" label-position="top" ref="changeDietFormRef" :rules="editRules">
-      <el-form-item label="类别："prop="mealType">
+  <el-dialog v-model="changeDietVisible" title="调换膳食" width="400px" :close-on-click-modal="false" @close="handleChangeCancel">
+    <el-form :model="changeDietForm" label-width="80px" label-position="top" ref="changeDietFormRef"
+             :rules="editRules">
+      <el-form-item label="类别：" prop="mealType">
         <el-select v-model="changeDietForm.mealType" placeholder="请选择膳食类别" style="width: 100%;">
-          <el-option
-              v-for="item in categoryOptions"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value"
-          />
+          <el-option v-for="item in categoryOptions" :key="item.value" :label="item.label"
+                     :value="item.value" />
         </el-select>
       </el-form-item>
 
-      <el-form-item label="膳食"prop="mealId">
-        <el-select v-model="changeDietForm.mealId" placeholder="请选择膳食" style="width: 100%;" :disabled="changeDietForm.mealType === ''">
-          <el-option
-              v-for="item in dishOptions"
-              :key="item.mealId"
-              :label="item.name"
-              :value="item.mealId"
-          />
+      <el-form-item label="膳食" prop="mealId">
+        <el-select v-model="changeDietForm.mealId" placeholder="请选择膳食" style="width: 100%;"
+                   :disabled="changeDietForm.mealType === ''">
+          <el-option v-for="item in dishOptions" :key="item.mealId" :label="item.name" :value="item.mealId" />
         </el-select>
       </el-form-item>
     </el-form>
@@ -171,12 +179,7 @@
     </template>
   </el-dialog>
 
-  <el-dialog
-      v-model="addDietVisible"
-      title="添加膳食安排"
-      width="400px"
-      :close-on-click-modal="false"
-  >
+  <el-dialog v-model="addDietVisible" title="添加膳食安排" width="400px" :close-on-click-modal="false" @close="handleAddCancel">
     <el-form :model="addDietForm" label-width="80px" label-position="top" :rules="editRules" ref="addFormRef">
       <el-form-item label="日期：" prop="date">
         <el-date-picker v-model="addDietForm.date" type="date" style="width: 100%;" />
@@ -184,31 +187,23 @@
 
       <el-form-item label="餐别：" prop="meal">
         <el-radio-group v-model="addDietForm.meal">
-          <el-radio label="breakfast" >早餐</el-radio>
-          <el-radio label="lunch" >午餐</el-radio>
-          <el-radio label="dinner" >晚餐</el-radio>
+          <el-radio label="breakfast">早餐</el-radio>
+          <el-radio label="lunch">午餐</el-radio>
+          <el-radio label="dinner">晚餐</el-radio>
         </el-radio-group>
       </el-form-item>
 
       <el-form-item label="类别：" prop="type">
         <el-select v-model="addDietForm.type" placeholder="请选择膳食类别" style="width: 100%;">
-          <el-option
-              v-for="item in categoryOptions"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value"
-          />
+          <el-option v-for="item in categoryOptions" :key="item.value" :label="item.label"
+                     :value="item.value" />
         </el-select>
       </el-form-item>
 
       <el-form-item label="膳食：" prop="mealId">
-        <el-select v-model="addDietForm.mealId" placeholder="请选择膳食" style="width: 100%;" :disabled="addDietForm.type === ''">
-          <el-option
-              v-for="item in dishOptions"
-              :key="item.mealId"
-              :label="item.name"
-              :value="item.mealId"
-          />
+        <el-select v-model="addDietForm.mealId" placeholder="请选择膳食" style="width: 100%;"
+                   :disabled="addDietForm.type === ''">
+          <el-option v-for="item in dishOptions" :key="item.mealId" :label="item.name" :value="item.mealId" />
         </el-select>
       </el-form-item>
     </el-form>
@@ -221,32 +216,31 @@
     </template>
   </el-dialog>
 
-  <el-dialog
-      v-model="addMealVisible"
-      title="添加膳食"
-      width="400px"
-      :close-on-click-modal="false"
-  >
+  <el-dialog v-model="addMealVisible" title="添加膳食" width="400px" :close-on-click-modal="false" @close="handleAddMealCancel">
     <el-form :model="addMealForm" label-width="80px" label-position="top" :rules="editRules" ref="editFormRef">
       <el-form-item label="类别：" prop="type">
         <el-select v-model="addMealForm.type" placeholder="请选择类别" style="width: 100%;">
-          <el-option
-              v-for="item in categoryOptions"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value"
-          />
+          <el-option v-for="item in categoryOptions" :key="item.value" :label="item.label"
+                     :value="item.value" />
         </el-select>
       </el-form-item>
 
       <el-form-item label="名称：" prop="name">
         <el-input v-model="addMealForm.name" placeholder="请输入名称" />
       </el-form-item>
+
+      <el-form-item label="膳食图片" prop="mealImg">
+        <el-upload action="#" list-type="picture-card" :on-exceed="handleExceed" :on-remove="handleImageRemove"
+                   :file-list="backImg" :before-upload="beforeUploadImage" :on-change="handleUploadBackground"
+                   :http-request="handleHttpRequest" :limit="1" accept="image/png,image/jpeg,image/jpg">
+          <i v-if="backImg.length < 1" class="el-icon-plus"></i>
+        </el-upload>
+      </el-form-item>
     </el-form>
 
     <template #footer>
       <div class="dialog-footer">
-        <el-button @click="addMealVisible = false">返回</el-button>
+        <el-button @click="handleAddMealCancel">返回</el-button>
         <el-button type="primary" @click="handleAddMealConfirm">确定</el-button>
       </div>
     </template>
@@ -256,37 +250,50 @@
 
 <script setup>
 import axios from "axios";
-import {computed, onMounted, reactive, ref, watch,nextTick} from 'vue'
-import {Search, Plus, Edit, Delete} from '@element-plus/icons-vue'
+import {
+  computed,
+  onMounted,
+  reactive,
+  ref,
+  watch,
+  nextTick
+} from 'vue'
+import {
+  Search,
+  Plus,
+  Edit,
+  Delete
+} from '@element-plus/icons-vue'
 import dayjs from "dayjs";
-import {ElMessage, ElMessageBox} from "element-plus";
+import {
+  ElMessage,
+  ElMessageBox
+} from "element-plus";
 
-// const  allDishes = ref([
-//   {"meal_id": 1, "name": "米饭", "type": 0},
-//   {"meal_id": 2, "name": "番茄炒蛋", "type": 1},
-//   {"meal_id": 3, "name": "炒青菜", "type": 2},
-//   {"meal_id": 4, "name": "苹果", "type": 3},
-//   {"meal_id": 5, "name": "紫菜蛋花汤", "type": 4},
-//   {"meal_id": 6, "name": "蛋挞", "type": 5},
-//   {"meal_id": 7, "name": "红烧鸡腿", "type": 1},
-//   {"meal_id": 8, "name": "花卷", "type": 0},
-//   {"meal_id": 9, "name": "凉拌黄瓜", "type": 2},
-//   {"meal_id": 10, "name": "香蕉", "type": 3}
-// ])
-// const filteredDishes = computed(() =>
-//     allDishes.value.filter(dish =>
-//         dish.type === categoryMap[activeCategory.value] &&
-//         dish.name.includes(dishSearch.value)
-//     )
-// )
-
-const categoryOptions = [
-  { label: '主食', value: 1 },
-  { label: '荤菜', value: 2 },
-  { label: '素菜', value: 3 },
-  { label: '水果', value: 4 },
-  { label: '汤', value: 5 },
-  { label: '点心', value: 6 }
+const categoryOptions = [{
+  label: '主食',
+  value: 1
+},
+  {
+    label: '荤菜',
+    value: 2
+  },
+  {
+    label: '素菜',
+    value: 3
+  },
+  {
+    label: '水果',
+    value: 4
+  },
+  {
+    label: '汤',
+    value: 5
+  },
+  {
+    label: '点心',
+    value: 6
+  }
 ]
 
 const mealNames = {
@@ -294,6 +301,11 @@ const mealNames = {
   lunch: '午餐',
   dinner: '晚餐'
 }
+
+const formatCategory = (row) => {
+  const item = categoryOptions.find(opt => opt.value === row.mealType);
+  return item ? item.label : '';
+};
 
 // ------------------------初始化和搜索---------------------------
 const date = ref(null)
@@ -304,7 +316,9 @@ const fetchDietArrangement = async (targetDate) => {
   const formatted = dayjs(targetDate).format('YYYY-MM-DD');
   try {
     const res = await axios.get('/DietController/showDiet', {
-      params: { date: formatted }
+      params: {
+        date: formatted
+      }
     });
 
     if (res.data.status === 200) {
@@ -318,20 +332,24 @@ const fetchDietArrangement = async (targetDate) => {
       };
     } else {
       arrangedMeals.value = {
-        breakfast: [], lunch: [], dinner: []
+        breakfast: [],
+        lunch: [],
+        dinner: []
       };
       ElMessage.warning(res.data.msg);
     }
   } catch (err) {
     // console.error('系统错误，请联系管理员，', err);
     arrangedMeals.value = {
-      breakfast: [], lunch: [], dinner: []
+      breakfast: [],
+      lunch: [],
+      dinner: []
     };
     ElMessage.error('系统错误，请联系管理员');
   }
 }
 
-const getWeekdayName = (date) =>{
+const getWeekdayName = (date) => {
   const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
   return days[new Date(date).getDay()]
 }
@@ -386,23 +404,24 @@ const mealTypeMap = {
 }
 const addDietForm = reactive({
   date: null,
-  meal: 'breakfast',  // 默认早餐
+  meal: 'breakfast', // 默认早餐
   type: '',
   mealId: ''
 })
 
 const handleAdd = () => {
+  addFormRef.value?.clearValidate();
   addDietForm.date = date.value
   addDietForm.meal = 'breakfast'
   addDietForm.type = ''
   addDietForm.mealId = ''
   dishOptions.value = []
-  // addFormRef.value?.clearValidate();
   addDietVisible.value = true
 }
 
 const handleAddCancel = () => {
   addDietVisible.value = false
+  addFormRef.value?.clearValidate();
 }
 
 watch(() => addDietForm.type, async (newType) => {
@@ -428,7 +447,7 @@ const handleAddConfirm = async () => {
       date: dayjs(addDietForm.date).format('YYYY-MM-DD'),
       type: mealTypeMap[addDietForm.meal],
       mealId: addDietForm.mealId,
-      state: 1  // 默认添加为启用状态
+      state: 1 // 默认添加为启用状态
     })
     if (res.data.status === 200) {
       ElMessage.success('添加成功')
@@ -446,10 +465,10 @@ const handleAddConfirm = async () => {
 const changeDietVisible = ref(false)
 const changeDietFormRef = ref(null)
 const changeDietForm = reactive({
-  dietCycleId:'',
-  state:'',
-  type:'',
-  mealId:'',
+  dietCycleId: '',
+  state: '',
+  type: '',
+  mealId: '',
   mealType: ''
 })
 const handleChange = (row) => {
@@ -463,15 +482,16 @@ const handleChange = (row) => {
   changeDietVisible.value = true;
 }
 
-const handleChangeCancel = () =>{
-  // changeDietFormRef.value?.clearValidate()
+const handleChangeCancel = () => {
   changeDietForm.mealType = ''
+  changeDietFormRef.value?.clearValidate()
   changeDietVisible.value = false
 }
 
 const dishOptions = ref([]);
 
 watch(() => changeDietForm.mealType, async (newType) => {
+  console.log("111111")
   changeDietForm.mealId = '';
   if (newType === '') return;
   try {
@@ -485,7 +505,6 @@ watch(() => changeDietForm.mealType, async (newType) => {
       dishOptions.value = res.data.data;
     } else {
       dishOptions.value = [];
-      // dishOptions.value = fetchAllDishes()
     }
   } catch (err) {
     console.error('获取菜品失败', err);
@@ -505,7 +524,8 @@ const handleChangeConfirm = async () => {
     if (res.data.status === 200) {
       ElMessage.success('调换成功');
       changeDietVisible.value = false;
-      fetchDietArrangement(date.value);  // 刷新数据
+      changeDietFormRef.value?.clearValidate();
+      fetchDietArrangement(date.value); // 刷新数据
     } else {
       ElMessage.warning(res.data.msg);
     }
@@ -521,8 +541,7 @@ const handleToggleState = async (newState, row) => {
   try {
     await ElMessageBox.confirm(
         `确认要${action}该膳食吗？`,
-        '状态切换确认',
-        {
+        '状态切换确认', {
           confirmButtonText: '确定',
           cancelButtonText: '取消',
           type: 'warning'
@@ -558,27 +577,26 @@ const handleDelete = async (row) => {
   try {
     const confirm = await ElMessageBox.confirm(
         '确定要删除该膳食安排吗？',
-        '删除确认',
-        {
+        '删除确认', {
           confirmButtonText: '删除',
           cancelButtonText: '取消',
           type: 'warning'
         }
     );
     if (confirm) {
-      const res = await axios.post('/DietController/deleteDiet', null,{params:{
+      const res = await axios.post('/DietController/deleteDiet', null, {
+        params: {
           dietCycleId: row.dietCycleId
         }
       });
       if (res.data.status === 200) {
         ElMessage.success('删除成功');
-        fetchDietArrangement(date.value);  // 刷新数据
+        fetchDietArrangement(date.value); // 刷新数据
       } else {
         ElMessage.warning(res.data.msg || '删除失败');
       }
     }
   } catch (err) {
-    // 点击“取消”不会触发这里，但网络/后端错误会
     console.error('删除失败', err);
     ElMessage.error('删除失败，请联系管理员');
   }
@@ -622,7 +640,7 @@ onMounted(() => {
   fetchAllDishes()
 })
 
-const handleMealSearch = () =>{
+const handleMealSearch = () => {
   fetchAllDishes()
 }
 
@@ -631,30 +649,70 @@ watch(activeCategory, () => {
 })
 
 // ------------------------编辑膳食信息---------------------------
-const editMealVisible =ref(false)
+const editMealVisible = ref(false)
 const editFormRef = ref(null)
 const editRules = {
-  date: [{ required: true, message: '请选择日期', trigger: 'change' }],
-  meal: [{ required: true, message: '请选择餐别', trigger: 'change' }],
-  mealId: [{ required: true, message: '请选择膳食', trigger: 'change' }],
-  name: [{ required: true, message: '请输入膳食名称', trigger: 'blur' }],
-  type: [{ required: true, message: '请选择膳食类别', trigger: 'change' }],
-  mealType: [{ required: true, message: '请选择膳食类别', trigger: 'change' }],
+  date: [{
+    required: true,
+    message: '请选择日期',
+    trigger: 'change'
+  }],
+  meal: [{
+    required: true,
+    message: '请选择餐别',
+    trigger: 'blur'
+  }],
+  mealId: [{
+    required: true,
+    message: '请选择膳食',
+    trigger: 'blur'
+  }],
+  name: [{
+    required: true,
+    message: '请输入膳食名称',
+    trigger: 'blur'
+  }],
+  type: [{
+    required: true,
+    message: '请选择膳食类别',
+    trigger: 'blur'
+  }],
+  mealType: [{
+    required: true,
+    message: '请选择膳食类别',
+    trigger: 'blur'
+  }],
 }
 const editMealForm = reactive({
-  mealId:'',
-  name:'',
-  type:''
+  mealId: '',
+  name: '',
+  type: '',
+  mealImg: ''
 })
-const handleMealEdit = (row) =>{
+const handleMealEdit = (row) => {
   editMealForm.name = row.name
   editMealForm.type = row.type
   editMealForm.mealId = row.mealId
+  editMealForm.mealImg = row.img;
+
+  editFileList.value = row.img ?
+      [{
+        name: '已上传图片',
+        url: row.img
+      }] :
+      [];
+
   editMealVisible.value = true
+
 }
 
-const handleEditMealCancel = () =>{
+const handleEditMealCancel = () => {
   editMealVisible.value = false
+  editMealForm.name = ''
+  editMealForm.type = ''
+  editMealForm.mealImg = ''
+  editFileList.value = []
+  editFormRef.value?.clearValidate();
 }
 
 const handleEditMealConfirm = async () => {
@@ -664,13 +722,14 @@ const handleEditMealConfirm = async () => {
     const res = await axios.post('/DietController/editFood', {
       mealId: editMealForm.mealId,
       name: editMealForm.name,
-      type: editMealForm.type
+      type: editMealForm.type,
+      img: editMealForm.mealImg
     });
 
     if (res.data.status === 200) {
       ElMessage.success('编辑成功');
       editMealVisible.value = false;
-      fetchAllDishes();  // 刷新右侧膳食列表
+      fetchAllDishes(); // 刷新右侧膳食列表
     } else {
       ElMessage.warning(res.data.msg || '编辑失败');
     }
@@ -678,20 +737,40 @@ const handleEditMealConfirm = async () => {
     console.error('编辑失败', err);
     ElMessage.error('编辑失败，请联系管理员');
   }
+
+  editMealForm.name = ''
+  editMealForm.type = ''
+  editMealForm.mealImg = ''
+  editFileList.value = []
+  editFormRef.value?.clearValidate();
+
 };
 // ------------------------添加膳食---------------------------
 const addMealVisible = ref(false)
 
 const addMealForm = reactive({
   name: '',
-  type: ''
+  type: '',
+  mealImg: ''
 })
 
-const handleMealAdd = () => {
+const handleAddMealCancel = () =>
+{
+  addMealVisible.value = false
   addMealForm.name = ''
   addMealForm.type = ''
-  addMealVisible.value = true
+  addMealForm.mealImg = ''
+  backImg.value = []
   editFormRef.value?.clearValidate();
+}
+
+const handleMealAdd = () => {
+  // addMealForm.name = ''
+  // addMealForm.type = ''
+  // addMealForm.mealImg = ''
+  // backImg.value = []
+  addMealVisible.value = true
+  // editFormRef.value?.clearValidate();
 }
 
 const handleAddMealConfirm = async () => {
@@ -700,7 +779,8 @@ const handleAddMealConfirm = async () => {
 
     const res = await axios.post('/DietController/addFood', {
       name: addMealForm.name,
-      type: addMealForm.type
+      type: addMealForm.type,
+      img: addMealForm.mealImg //等待后端代码ing
     });
 
     if (res.data.status === 200) {
@@ -714,15 +794,103 @@ const handleAddMealConfirm = async () => {
     console.error('添加膳食失败', err);
     ElMessage.error('添加失败，请联系管理员');
   }
+  addMealForm.name = ''
+  addMealForm.type = ''
+  addMealForm.mealImg = ''
+  backImg.value = []
+  editFormRef.value?.clearValidate();
 };
+
+// ------------------------图片上传---------------------------
+const backImg = ref([]);
+const beforeUploadImage = (file) => {
+  const isImage = file.type.startsWith('image/');
+  const isLt2M = file.size / 1024 / 1024 < 4;
+  if (!isImage) ElMessage.warning('只能上传图片类型');
+  if (!isLt2M) ElMessage.warning('图片大小不能超过4MB');
+  return isImage && isLt2M;
+};
+
+const handleExceed = () => {
+  ElMessage.warning('只能上传一张图片');
+};
+
+const handleImageRemove = () => {
+  addMealForm.mealImg = '';
+  backImg.value = [];
+};
+
+const handleUploadBackground = (file, fileList) => {
+  backImg.value = fileList;
+};
+
+const handleHttpRequest = async ({
+                                   file
+                                 }) => {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  try {
+    const res = await axios.post('/FileController/upload', formData); // 注意：更换为你的上传接口
+    if (res.data.status === 200) {
+      addMealForm.mealImg = res.data.data; // 设置上传成功的图片 URL
+      backImg.value = [{
+        name: file.name,
+        url: res.data.data
+      }];
+      ElMessage.success('图片上传成功');
+    } else {
+      ElMessage.error(res.data.msg || '上传失败');
+      ElMessage.error('上传失败');
+      backImg.value = [];
+    }
+  } catch (err) {
+    console.error('上传失败', err);
+    ElMessage.error('图片上传失败');
+  }
+};
+
+
+const editFileList = ref([])
+
+const handleEditHttpRequest = async (option) => {
+  const formData = new FormData()
+  formData.append('file', option.file)
+
+  try {
+    const res = await axios.post('/FileController/upload', formData)
+    if (res.data.status === 200) {
+      editMealForm.mealImg = res.data.data
+      editFileList.value = [{
+        name: option.file.name,
+        url: res.data.data
+      }]
+      // ElMessage.error(res.data.msg || '上传失败');
+      ElMessage.success('图片上传成功');
+    } else {
+      ElMessage.warning('上传失败');
+      editFileList.value = [];
+    }
+  } catch (err) {
+    console.error('上传失败', err)
+    ElMessage.error('上传失败')
+  }
+}
+
+const handleEditImageRemove = () => {
+  editMealForm.mealImg = ''
+  editFileList.value = []
+}
+
+
+
 
 // ------------------------删除膳食---------------------------
 const handleMealDelete = async (row) => {
   try {
     const confirm = await ElMessageBox.confirm(
         `确定要删除「${row.name}」这个膳食吗？`,
-        '删除确认',
-        {
+        '删除确认', {
           confirmButtonText: '删除',
           cancelButtonText: '取消',
           type: 'warning'
@@ -731,30 +899,26 @@ const handleMealDelete = async (row) => {
 
     if (confirm) {
       const res = await axios.post('/DietController/deleteFood', null, {
-        params:{
+        params: {
           mealId: row.mealId
-        }}
-      )
+        }
+      })
       if (res.data.status === 200) {
         ElMessage.success('删除成功');
-        fetchAllDishes();  // 重新加载列表
+        fetchAllDishes(); // 重新加载列表
         fetchDietArrangement(date.value);
       } else {
         ElMessage.warning(res.data.msg || '删除失败');
       }
     }
   } catch (err) {
-    // 用户点“取消”不会触发这里，只有错误才会触发
     console.error('删除失败', err);
     ElMessage.error('删除失败，请联系管理员');
   }
 };
-
-
 </script>
 
 <style scoped>
-
 /* 最外层 */
 .diet-calendar-layout {
   height: 100%;

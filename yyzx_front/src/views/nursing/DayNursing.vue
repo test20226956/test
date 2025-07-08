@@ -177,6 +177,7 @@ const addNursingRe = () => {
     if (rb.status == 200) {
       ElMessage.success("添加成功");
       addDialogVisible.value = false;
+      getCustPro();
     }else {
       ElMessage.error(rb.msg);
     }

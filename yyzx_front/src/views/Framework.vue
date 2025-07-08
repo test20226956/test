@@ -36,7 +36,6 @@ const isCollapse = computed(() => {
       <el-aside class="left" :width="asideWidth">
         <nursing-router ref="nursingRouterRef" v-if="type" :isCollapse="isCollapse" class="menu"></nursing-router>
         <admin-router ref="adminRouterRef" v-else :isCollapse="isCollapse" class="menu"></admin-router>
-
       </el-aside>
       <el-main class="right">
         <router-view></router-view>

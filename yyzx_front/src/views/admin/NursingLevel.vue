@@ -177,19 +177,19 @@
           <el-col :span="9">
             <el-form label-position="left" label-width="auto">
               <el-form-item label="项目名称">
-                <el-input v-model="searchAddedProName" placeholder="请输入项目名称"></el-input>
+                <el-input v-model="searchAddedProName" placeholder="请输入项目名称" clearable></el-input>
               </el-form-item>
             </el-form>
           </el-col>
+          <!--         <el-col :span="1.1">
+                      <el-button type="primary" plain circle @click="searchAddedPro">
+                        <el-icon>
+                          <Search />
+                        </el-icon>
+                      </el-button>
+                    </el-col> -->
           <el-col :span="1.1">
-            <el-button type="primary" plain circle @click="searchAddedPro">
-              <el-icon>
-                <Search />
-              </el-icon>
-            </el-button>
-          </el-col>
-          <el-col :span="1.1">
-            <el-button type="info" plain circle @click="resetAddedPro">
+            <el-button type="primary" plain circle @click="resetAddedPro">
               <el-icon>
                 <RefreshRight />
               </el-icon>
@@ -198,7 +198,7 @@
         </el-row>
         <!-- 第三行：当前级别的项目列表 -->
         <el-row>
-          <el-table :data="editedLevel.projects" max-height="40vh">
+          <el-table :data="displayedProjects" max-height="40vh">
             <el-table-column prop="nursingProjectId" label="项目编号" width="100" align="center"/>
             <el-table-column prop="name" label="名称" width="100" align="center"/>
             <el-table-column prop="price" label="价格" width="100" align="center"/>
@@ -238,6 +238,11 @@
             </el-form-item>
           </el-form>
         </el-col>
+        <el-button type="primary" plain circle @click="resetUnAddedPro">
+          <el-icon>
+            <RefreshRight />
+          </el-icon>
+        </el-button>
       </el-row>
       <!-- 未添加项目表格界面 -->
       <el-row>
@@ -393,6 +398,16 @@ const searchUnAddedResult = computed(() => {
 
 // 已选择的未添加的项目
 const selectedUnAddedProList = ref([]);
+
+// 自动计算展示用的项目列表
+const displayedProjects = computed(() => {
+  const keyword = searchAddedProName.value.trim().toLowerCase();
+  if (!keyword) return editedLevel.value.projects || [];
+
+  return (editedLevel.value.projects || []).filter(item =>
+      item.name?.toLowerCase().includes(keyword)
+  );
+});
 
 // 分页
 let total = ref(400);
@@ -551,6 +566,7 @@ const submitAdd = () => {
           });
           resetTable();
           addDialogVisible.value = false;
+          addFormRef.value?.resetFields();
         }
       }).catch(error => {
         ElMessage({message:rb.msg, type:'error'});
@@ -565,12 +581,18 @@ const submitAdd = () => {
 
 // 修改对话框打开
 const editDialogOpen = (row) => {
+  console.log("打开修改对话框");
   editDialogVisible.value = true;
+  console.log("当前的nursingList:");
+  console.log(nursingLevelList.value);
+  console.log("点击的这一行：")
+  console.log(row);
   // 赋值
   editedLevel.value = JSON.parse(JSON.stringify(row));
+  console.log("修改的数据：")
   console.log(editedLevel.value);
   // 看一下有没有项目
-  if(editedLevel.value.projects === [] || !editedLevel.value.projects){
+  if(!editedLevel.value.projects || editedLevel.value.projects.length === 0){
     console.log("级别下项目为空，去找")
     let projects = [];
     let url = `NursingLevelController/showNursingPro?nursingLevelId=${row.nursingLevelId}`;
@@ -578,38 +600,57 @@ const editDialogOpen = (row) => {
       let rb = response.data;
       if(rb.status === 200){
         projects = rb.data;
-        console.log("找到了")
+        console.log("找到了，是：")
         console.log(projects);
-        editedLevel.value.projects = projects;
+        editedLevel.value.projects = JSON.parse(JSON.stringify(projects));
         //   也给对应位置的列表赋值
         nursingLevelList.value.forEach((item, index) => {
           if(item.nursingLevelId === row.nursingLevelId){
-            nursingLevelList.value[index].projects = projects;
+            nursingLevelList.value[index].projects = JSON.parse(JSON.stringify(projects));
           }
         })
       }else{
+        console.log("没找到")
         console.log(rb.msg);
+        editedLevel.value.projects = JSON.parse(JSON.stringify(projects));
+        //   也给对应位置的列表赋值
+        nursingLevelList.value.forEach((item, index) => {
+          if(item.nursingLevelId === row.nursingLevelId){
+            nursingLevelList.value[index].projects = [];
+          }
+        })
       }
     }).catch(error => {
       console.log(error);
     })
-    editedLevel.value.projects = projects;
-
   }
 
+  console.log("当前修改的数据：");
   console.log(editedLevel.value);
+  console.log("当前的总数据：");
+  console.log(nursingLevelList.value);
   // 每次打开，都重置未添加的项目
   unAddedProList.value = [];
   needFetchUnAdded.value = true;
+  console.log("当前可以添加的项目：");
+  console.log(unAddedProList.value);
+  console.log("是否需要调用后端去获得未添加的项目：");
+  console.log(needFetchUnAdded.value);
 }
 
 // 修改对话框关闭
 const editDialogClose = () => {
+  console.log("关闭修改对话框");
   ElMessageBox.confirm('是否关闭该对话框？')
       .then(() => {
+        console.log("确定关闭修改对话框");
         editDialogVisible.value = false;
         // 重置搜索
         searchAddedProName.value = '';
+        console.log("当前修改的数据：");
+        console.log(editedLevel.value);
+        console.log("当前的总数据：");
+        console.log(nursingLevelList.value);
         resetEditForm();
       }).catch((error) => {
     console.log(error);
@@ -618,52 +659,72 @@ const editDialogClose = () => {
 
 // 重置修改内容
 const resetEditForm = () => {
+  console.log("重置修改内容");
   editedLevel.value = {
     nursingLevelId: 0,
     name: '',
     state: 1,
     projects: [],
   }
+  console.log("当前修改的数据：");
+  console.log(editedLevel.value);
+  console.log("当前的总数据：");
+  console.log(nursingLevelList.value);
   editFormRef.value?.clearValidate();
+  searchAddedProName.value = ''
 }
 
 
 // 搜索已经添加的项目
-const searchAddedPro = () => {
-  let searchName = searchAddedProName.value;
-  // 先重置，再搜索
-  resetAddedPro();
-  searchAddedProName.value = searchName;
-  console.log("搜索已经添加的项目");
-  console.log(searchName);
-  if(editedLevel.value.projects === null || editedLevel.value.projects.length === 0){
-    // 如果根本没有就不需要去找了
-    ElMessage({message:'无数据', type:'info'});
-    return;
-  }
-  const keyword = searchName.trim().toLowerCase();
-  editedLevel.value.projects = editedLevel.value.projects.filter(item => {
-    const matchName = keyword === '' || item.name.toLowerCase().includes(keyword);
-    return matchName;
-  })
-};
+// const searchAddedPro = () => {
+// 	console.log("搜索已经添加的项目");
+// 	console.log("搜索的名称是：");
+//   let searchName = searchAddedProName.value;
+//   console.log(searchName);
+//   // 先重置，再搜索
+//   console.log("先进行了重置：");
+//   resetAddedPro();
+//   searchAddedProName.value = searchName;
+//   console.log("搜索已经添加的项目");
+//   if(editedLevel.value.projects === null || editedLevel.value.projects.length === 0){
+//     console.log("修改的数据根本没有项目")
+// 	// 如果根本没有就不需要去找了
+//     ElMessage({message:'无数据', type:'info'});
+//     return;
+//   }
+//   console.log("进行搜索");
+//   const keyword = searchName.trim().toLowerCase();
+//   editedLevel.value.projects = editedLevel.value.projects.filter(item => {
+//     const matchName = keyword === '' || item.name.toLowerCase().includes(keyword);
+//     console.log("找到的项目是：");
+// 	console.log(matchName);
+// 	return matchName;
+//   })
+// };
 
 // 重置已经添加的项目
 const resetAddedPro = () => {
   console.log("重置已经添加的项目");
-  nursingLevelList.value.forEach((item, index) => {
-    if(item.nursingLevelId === editedLevel.value.nursingLevelId){
-      console.log("111");
-      console.log(item.projects);
-      editedLevel.value.projects = item.projects;
-    }
-  })
+  // console.log("从nursingLevelList里面找到已经添加的项目")
+  // console.log("nursingLevelList的内容是：");
+  // console.log(nursingLevelList.value);
+  // nursingLevelList.value.forEach((item, index) => {
+  //   if(item.nursingLevelId === editedLevel.value.nursingLevelId){
+  //     console.log("找到了nursingLevelList中正在被修改的那一项，这里的项目为：");
+  //     console.log(item.projects);
+  //     editedLevel.value.projects = JSON.parse(JSON.stringify(item.projects));
+  //  console.log("修改的级别下的项目为：");
+  //  console.log(editedLevel.value);
+  //   }
+  // })
   searchAddedProName.value = '';
 }
 
 // 打开添加项目对话框
 const proDialogOpen = () => {
+  console.log("打开添加项目对话框")
   if(needFetchUnAdded.value === true){
+    console.log("需要给表格赋值")
     // 去给表格赋值
     let url = `NursingLevelController/showUnNursingPro?nursingLevelId=${editedLevel.value.nursingLevelId}`;
     axios.get(url).then(response => {
@@ -673,6 +734,7 @@ const proDialogOpen = () => {
         rb.data.forEach((item, index) => {
           unAddedProList.value.push(item);
         })
+        console.log("可以添加的项目是：")
         console.log(unAddedProList.value);
         needFetchUnAdded.value = false;
       }else{
@@ -691,21 +753,41 @@ const proDialogOpen = () => {
 
 // 选择未添加的项目
 const unAddedSelectionChange = (rows) => {
+  console.log("选择了一个未添加的项目，当前选择的所有项目是：");
   selectedUnAddedProList.value = rows;
   console.log(selectedUnAddedProList.value);
+  console.log("当前所有项目是：");
+  console.log(nursingLevelList.value);
 }
 
 // 给级别添加项目
 const addPro = () => {
+  console.log('是不是同一个 projects 引用：',
+      editedLevel.value.projects ===
+      nursingLevelList.value.find(i => i.nursingLevelId === editedLevel.value.nursingLevelId)?.projects);
+
+  console.log("给级别添加项目，当前的nursingLevelList为：")
+  console.log(nursingLevelList.value);
+  console.log("当前修改的内容是：");
+  console.log(editedLevel.value);
+  if(selectedUnAddedProList.value.length === 0){
+    ElMessage({message:'未添加任何项目', type:'info'})
+  }
   selectedUnAddedProList.value.forEach((item, index) => {
     editedLevel.value.projects.push(item);
   })
+  console.log(nursingLevelList.value);
   // 将未添加里面的的删去
   const selectedIds = new Set(selectedUnAddedProList.value.map(item => item.nursingProjectId));
   unAddedProList.value = unAddedProList.value.filter(item => !selectedIds.has(item.nursingProjectId));
   // 重置选择
   selectedUnAddedProList.value = [];
   proDialogVisible.value = false;
+}
+
+// 重置未添加项目的搜索
+const resetUnAddedPro = () => {
+  searchUnAddedProName.value = ''
 }
 
 // 关闭添加项目对话框

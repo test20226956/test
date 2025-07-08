@@ -7,7 +7,7 @@ import {
   Location,
   Setting, Expand,
   User,
-  FirstAidKit, Bowl,Avatar,Edit,OfficeBuilding,
+  FirstAidKit, Bowl,Avatar,Edit,OfficeBuilding,Monitor
 } from '@element-plus/icons-vue'
 
 const router = useRouter();
@@ -72,6 +72,10 @@ const toServiceCust = () => {
 
 const toUserMGMT = () => {
   router.push("/framework/userMGMT");
+}
+
+const toStaCharts = () => {
+  router.push("/framework/staCharts");
 }
 
 const activeIndex = ref('1')
@@ -169,6 +173,15 @@ defineProps({
           <span>用户管理</span>
         </template>
         <el-menu-item class="item" index="6-1" @click="toUserMGMT">基础数据维护</el-menu-item>
+      </el-sub-menu>
+      <el-sub-menu class="sub-menu" index="7" popper-class="menu-popper">
+        <template #title>
+          <el-icon>
+            <Monitor/>
+          </el-icon>
+          <span>数据看板</span>
+        </template>
+        <el-menu-item class="item" index="7-1" @click="toStaCharts">数据看板</el-menu-item>
       </el-sub-menu>
     </el-menu>
   </el-scrollbar>

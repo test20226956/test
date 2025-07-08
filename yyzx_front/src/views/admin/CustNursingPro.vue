@@ -483,6 +483,7 @@ const addLevel = () => {
             customerId: null,
             nursingLevelId: null,
           }
+          nursingServiceList.value = [];
           initTable();
         }else{
           ElMessage({message:rb.msg, type:'error'});

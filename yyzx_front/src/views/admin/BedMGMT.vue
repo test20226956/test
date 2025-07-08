@@ -5,11 +5,8 @@ import {Edit, RefreshRight, Search,Switch} from "@element-plus/icons-vue";
 import {reactive, ref, onMounted, inject} from "vue";
 import {ElMessage} from "element-plus";
 import dayjs from 'dayjs';
-let currentPage = ref(1);
-let pageSize = ref(10);
-let total = ref(0);
+
 const activeTab = ref('current');
-const arr = ref(null)
 const changeVisible = ref(false)
 const changeForm = reactive({
   customerId: '',
@@ -39,8 +36,8 @@ const handleFloorChange = () => {
   availableRooms.value = []
   availableBeds.value = []
 
-  changeForm.newRoom = '';
-  changeForm.newBed = '';
+  // changeForm.newRoom = '';
+  // changeForm.newBed = '';
 
   if (!changeForm.floor) return
 
@@ -57,7 +54,7 @@ const handleFloorChange = () => {
 
 const handleRoomChange = () => {
   // changeForm.newBed = ''
-  availableBeds.value = []
+  // availableBeds.value = []
 
   if (!changeForm.newRoom) return
 
@@ -81,16 +78,20 @@ const editForm = reactive({
   startDate: '',
   endDate: ''
 })
+// ----------------------分页---------------------------
+let currentPage = ref(1);
+let pageSize = ref(10);
+let total = ref(0);
 const handleSizeChange = (val) => {
   pageSize.value = val;
   init();
-  // console.log(`${val} items per page`)
 }
 const handleCurrentChange = (val) => {
   currentPage.value = val;
   init();
-  // console.log(`current page: ${val}`)
 }
+// ---------------------初始化----------------------------
+const arr = ref(null)
 const init = () => {
   let url = 'BedRecordController/searchBedRecord';
   const data = {
@@ -150,39 +151,47 @@ const handleReset = () => {
 
 onMounted(() => {
   init();
-  changeForm.newStartDate = dayjs().format('YYYY-MM-DD')
+  // changeForm.newStartDate = dayjs().format('YYYY-MM-DD')
 });
 
+// -------------------------调换床位-----------------------------
+
 const handleChange = (row) => {
+  changeFormRef.value?.clearValidate();
+
   changeForm.customerId = row.customerId
   changeForm.name = row.name
   changeForm.gender = row.gender
   changeForm.oldBed = row.bed
   changeForm.newStartDate = dayjs().format('YYYY-MM-DD')
   changeVisible.value = true
-  changeFormRef.value?.clearValidate();
 }
 
 const changeFormRef = ref(null)
-const editFormRef = ref(null)
-
-
 const changeRules = {
   floor: [{required: true, message: '请选择楼层', trigger: 'change'}],
-  newRoom: [{required: true, message: '请选择房号', trigger: 'change'}],
-  newBed: [{required: true, message: '请选择床号', trigger: 'change'}],
+  newRoom: [{required: true, message: '请选择房号', trigger: 'blur'}],
+  newBed: [{required: true, message: '请选择床号', trigger: 'blur'}],
   newEndDate: [{required: true, message: '请选择结束日期', trigger: 'change'}]
 }
 
-const editRules = {
-  endDate: [{required: true, message: '请选择结束日期', trigger: 'change'}]
-}
-
 const handleChangeCancel = () => {
-  // 清空表单（如需保留填写内容则省略此步）
   resetChangeForm()
   changeVisible.value = false
 }
+
+const resetChangeForm = () => {
+  changeForm.name = ''
+  changeForm.gender = ''
+  changeForm.oldBed = ''
+  changeForm.newBuilding = '606'
+  changeForm.floor = ''
+  changeForm.newRoom = ''
+  changeForm.newBed = ''
+  changeForm.newStartDate = ''
+  changeForm.newEndDate = ''
+}
+
 const handleChangeConfirm = () => {
   // 这里只做示例：可在此添加验证和提交逻辑
   console.log('提交床位调换表单：', {...changeForm})
@@ -217,24 +226,14 @@ const handleChangeConfirm = () => {
       ElMessage.error('网络错误');
     });
   });
-  // 关闭弹窗并清空表单
-  // resetChangeForm()
-  // changeVisible.value = false
-  // init();
 }
-// 表单重置函数
-const resetChangeForm = () => {
-  changeForm.name = ''
-  changeForm.gender = ''
-  changeForm.oldBed = ''
-  changeForm.newBuilding = '606'
-  changeForm.floor = ''
-  changeForm.newRoom = ''
-  changeForm.newBed = ''
-  changeForm.newStartDate = ''
-  changeForm.newEndDate = ''
+
+// --------------------------------修改床位信息------------------------------------
+const editFormRef = ref(null)
+
+const editRules = {
+  endDate: [{required: true, message: '请选择结束日期', trigger: 'change'}]
 }
-// 修改信息
 const handleEdit = (row) => {
   editForm.bedRecordId = row.bedRecordId
   editForm.name = row.name
@@ -289,7 +288,8 @@ const date = ref('');
 const handleSearch = () => {
   currentPage.value = 1;
   init();
-};
+}
+
 </script>
 
 <template>

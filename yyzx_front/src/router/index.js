@@ -20,6 +20,7 @@ import GoOutApply from "@/views/nursing/GoOutApply.vue";
 import Framework from "@/views/Framework.vue";
 import Login from "@/views/Login.vue";
 import Welcome from "@/views/Welcome.vue";
+import StaCharts from "@/views/admin/StaCharts.vue";
 
 import {ElMessageBox} from "element-plus";
 
@@ -210,7 +211,15 @@ const routes = [
           requireAdmin: false,
           requireUser: false,
         }
-      },
+      }, {
+        path: '/framework/staCharts',
+        component: StaCharts,
+        meta: {
+          breadcrumb: ['数据看板'],
+          requireAdmin: false,
+          requireUser: false,
+        }
+      }
     ]
   }
 ]

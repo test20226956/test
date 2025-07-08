@@ -8,10 +8,10 @@
         </el-select>
       </el-form-item>
       <div class="bed-map-stats">
-        <span><i class="icon bed-icon all" /> 总床数：{{ stats.total }}</span>
-        <span><i class="icon bed-icon free" /> 空闲：{{ stats.free }}</span>
-        <span><i class="icon bed-icon occupied" /> 有人：{{ stats.occupied }}</span>
-        <span><i class="icon bed-icon out" /> 外出：{{ stats.out }}</span>
+        <span><i class="icon bed-icon all" /> 总床数：{{ stats.total || 0 }}</span>
+        <span><i class="icon bed-icon free" /> 空闲：{{ stats.free || 0 }}</span>
+        <span><i class="icon bed-icon occupied" /> 有人：{{ stats.occupied || 0}}</span>
+        <span><i class="icon bed-icon out" /> 外出：{{ stats.goOut || 0}}</span>
       </div>
     </div>
 
@@ -46,28 +46,7 @@
 import { ref, nextTick, watch, onMounted } from 'vue'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
-
-const mockBackendResponse = {
-  status: 200,
-  msg: "查询成功",
-  data: [
-    { room_number: '卫生间', loc: "r101"},
-    { room_number: '洗衣房', loc: "r102"},
-    { room_number: 101, loc: "r103", bed_count: 4 },
-    { room_number: 102, loc: "r104", bed_count: 4 },
-    { room_number: 103, loc: "r105", bed_count: 4 },
-    { room_number: 104, loc: "r106", bed_count: 4 },
-    { room_number: 105, loc: "r107", bed_count: 4 },
-    // { room_number: 112, loc: "r112", bed_count: 4 },
-    { room_number: '公共浴室', loc: "r112"},
-
-    { room_number: '活动室', loc: "r301"},
-    { room_number: '楼梯间', loc: "r311"},
-    { room_number: '卫生间', loc: "r312"},
-
-  ]
-}
-
+// ------------------------------楼层布局------------------------------------
 const allGridAreas = [
   'r101' ,'r102' ,'r103' ,'r104' ,'r105' ,'r106' ,'r107' ,'r108' ,'r109' ,'r110' ,'r111' ,'r112',
   'corridor',
@@ -75,24 +54,22 @@ const allGridAreas = [
   'r409' ,'r411' ,
   'r509' ,'r511' ,
 ]
-const isTallRoom = ['r302', 'r303', 'r304', 'r305']
-// 楼层数据
+
+// 楼层数据（2-6层）
 const selectedFloor = ref(2)
 const floors = [
-  // { label: '一楼', value: 1 },
   { label: '二楼', value: 2 },
   { label: '三楼', value: 3 },
   { label: '四楼', value: 4 },
   { label: '五楼', value: 5 },
   { label: '六楼', value: 6 }
-  // { label: '七楼', value: 7 }
 ]
-
+// bedSta
 const stats = ref({
-  total: 100,
-  free: 13,
-  occupied: 65,
-  out: 22
+  total: 0,
+  free: 0,
+  occupied: 0,
+  goOut: 0
 })
 
 
@@ -108,13 +85,6 @@ const fetchRooms = async () => {
 
     const roomMap = new Map()
 
-    // 插入功能房（固定位置）
-    // roomMap.set('r101', { label: '卫生间', type: 'toilet', gridArea: 'r101' })
-    // roomMap.set('r102', { label: '洗衣房', type: 'laundry', gridArea: 'r102' })
-    // roomMap.set('r112', { label: '公共浴室', type: 'bathroom', gridArea: 'r112' })
-    // roomMap.set('r304', { label: '活动间', type: 'activity', gridArea: 'r304' })
-    // roomMap.set('r305', { label: '洗衣房', type: 'laundry', gridArea: 'r305' })
-
     if (res.data.status === 200) {
       console.log("查询成功")
       const backendRooms = res.data.data
@@ -122,6 +92,7 @@ const fetchRooms = async () => {
       backendRooms.forEach(r => {
         const id = r.loc
         const room_number = r.roomNumber
+        // 特殊房间样式设置
         if(room_number === '卫生间'){
           roomMap.set(id, { label: '卫生间', type: 'toilet', gridArea: r.loc })
         }else if(room_number === '洗衣房'){
@@ -183,15 +154,6 @@ const hoverRoom = async (room, event) => {
     return
   }
 
-  // if (!room || room.type === 'empty' || room.type === 'spacer') {
-  //   hoveredRoom.value = null
-  //   return
-  // }
-  // const tempRoom = {
-  //   ...room,
-  //   beds: []
-  // }
-  // hoveredRoom.value = tempRoom
   hoveredRoom.value = {
     ...room,
     beds: []  // 初始空
@@ -235,7 +197,7 @@ const hoverRoom = async (room, event) => {
       }
     }
   } catch (err) {
-    ElMessage.error(error || '系统错误，请管理员联系');
+    ElMessage.error(err || '系统错误，请管理员联系');
     hoveredRoom.value.beds = []
   }
 }
@@ -251,15 +213,15 @@ const fetchBedStats = async () => {
         total: res.data.data.floorStats.total,
         free: res.data.data.floorStats.free,
         occupied: res.data.data.floorStats.taken,
-        out: res.data.data.floorStats.out
+        out: res.data.data.floorStats.goOut
       }
     } else {
       ElMessage.warning(res.data.msg || '床位统计数据获取失败');
-      stats.value = { total: 0, free: 0, occupied: 0, out: 0 }
+      stats.value = { total: 0, free: 0, occupied: 0, goOut: 0 }
     }
   } catch (err) {
     ElMessage.error('请求床位统计信息失败');
-    stats.value = { total: 0, free: 0, occupied: 0, out: 0 }
+    stats.value = { total: 0, free: 0, occupied: 0, goOut: 0 }
   }
 }
 onMounted(() => {
@@ -267,8 +229,10 @@ onMounted(() => {
   fetchBedStats()
 })
 
-// onMounted(fetchRooms,fetchBedStats)
-watch(selectedFloor, fetchRooms,fetchBedStats)
+watch(selectedFloor, () => {
+  fetchRooms()
+  fetchBedStats()
+})
 </script>
 
 <style scoped>

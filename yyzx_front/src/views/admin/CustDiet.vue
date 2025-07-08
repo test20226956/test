@@ -10,16 +10,13 @@ import axios from "axios";
 let currentPage = ref(1);
 let pageSize = ref(10);
 let total = ref(0);
-// let arr = ref([]);
 const handleSizeChange = (val) => {
   pageSize.value = val;
   init();
-  // console.log(`${val} items per page`)
 }
 const handleCurrentChange = (val) => {
   currentPage.value = val;
   init();
-  // console.log(`current page: ${val}`)
 }
 
 // ---------------------------初始化膳食配置、搜索和重置----------------------------
@@ -73,8 +70,6 @@ const init = () => {
       arr.value = [];
       total.value = 0;
       ElMessage({message:rb.msg,type:'warning'})
-      // alert(rb.msg);
-      // ElMessage({message:''})
     }
   }).catch(error => {
     ElMessage.error('系统错误，请联系管理员');
@@ -83,17 +78,16 @@ const init = () => {
 }
 
 const handleSearch = () => {
-  currentPage.value = 1; // 搜索时重置为第一页
+  currentPage.value = 1;
   init();
 };
 
 const handleResetSearch = () => {
   searchName.value = '';
-  currentPage.value = 1; // 重置也跳回第一页
+  currentPage.value = 1;
   init();
 };
 
-// const editDialogRef = ref(null)
 onMounted(() => {
   init()
 })
@@ -108,8 +102,8 @@ const flavorOptions = [
 const editForm = reactive({
   name: '',
   roomInfo:'',
-  flavor: [],  // ["低油","低盐","低糖"]
-  restraint: [],  // 忌口
+  flavor: [],
+  restraint: [],
   comment: ''
 })
 
@@ -125,10 +119,10 @@ const handleEdit = (row) => {
 }
 const handleCancel = () => {
   visible.value = false
+  // editFormRef.value?.clearValidate()
 }
 
 const handleEditConfirm = () => {
-  // 注意edit和reset的post请求可能需要改用qs，具体等后端实现
   const payload = {
     customerDietId: editForm.customerDietId,
     customerId: editForm.customerId,
@@ -141,6 +135,7 @@ const handleEditConfirm = () => {
     if (status === 200) {
       ElMessage.success('膳食配置修改成功');
       visible.value = false;
+      // editFormRef.value?.clearValidate();
       init();  // 刷新数据
     } else {
       ElMessage.warning(msg || '修改失败');
@@ -180,28 +175,13 @@ const handleReset = (row) => {
         ElMessage.warning(res.data.msg || '重置失败');
       }
     }).catch(() => {
-      ElMessage.error('系统错误，请联系管理员');
+      ElMessage.error('重置失败，请联系管理员');
     });
   }).catch(() => {
-    // 用户取消
-    // ElMessage.info('已取消')
+    ElMessage.info('已取消');
   })
 }
 
-// 控制对话框显示
-
-// 表单数据
-
-
-// 取消和确定（方法体可留空）
-
-
-
-
-
-// onMounted(() => {
-//   init();
-// });
 </script>
 
 <template>
