@@ -132,7 +132,7 @@
               </el-form>
             </template>
           </el-table-column>
-          <el-table-column prop="endTime" label="结束时间" align="center" width="150px">
+          <el-table-column prop="endTime" label="结束时间" align="center">
             <template v-slot="scope">
               <el-form :model="scope.row" :rules="timeRules" ref="timeRef">
                 <el-form-item prop="endTime">
