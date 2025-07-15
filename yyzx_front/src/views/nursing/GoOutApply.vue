@@ -137,8 +137,7 @@ const searchCustByName = () => {
 const checkOutApp = (row) => {
   dialogVisible.value = true;
   recordInfo.value = row;
-  recordInfo.value.nName = "小李";
-  //recordInfo.value.applyUser = sessionStorage.getItem('userName');
+  recordInfo.value.applyUser = sessionStorage.getItem('userName');
 }
 
 const custId = ref('')
@@ -190,7 +189,6 @@ const searchRecordByTime = () => {
 const addApply = () => {
   const url = 'GoOutController/addGoOutRe';
   const userid = userId.value ;
-  //const userid = sessionStorage.getItem('userId');
   const data = {
     customerId: recordInfo.value.customerId,
     outTime: recordInfo.value.outTime,

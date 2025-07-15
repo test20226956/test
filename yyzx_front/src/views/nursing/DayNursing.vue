@@ -163,7 +163,6 @@ const searchProByName = () => {
 
 const addNursingRe = () => {
   let url = "UserController/addCareRecord";
-  //let userid = sessionStorage.getItem("userid");
   const userid = userId.value;
   let nursingRecord = {
     customerId: custId.value,

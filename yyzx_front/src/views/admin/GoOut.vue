@@ -85,10 +85,6 @@ init();
 
 const searchCheckOutRe = () => {
   let url = 'GoOutController/searchGoOut';
-  // const year = searchCheckOut.value.applyTime.getFullYear()
-  // const month = String(searchCheckOut.value.applyTime.getMonth() + 1).padStart(2, '0')
-  // const day = String(searchCheckOut.value.applyTime.getDate()).padStart(2, '0')
-  // searchCheckOut.value.applyTime = `${year}-${month}-${day}`
   const data = {
     pageNum: currentPage.value,
     pageSize: pageSize.value,

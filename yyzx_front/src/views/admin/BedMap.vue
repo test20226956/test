@@ -185,7 +185,7 @@ const hoverRoom = async (room, event) => {
           else if (bed.available === 1) status = 'occupied'
           else if (bed.available === 2) status = 'out'
           return {
-            name: bed.customer_name ?? `床位${bed.bed_number} 空闲`,
+            name: bed.customer_name ?? `床位${bed.bed_number}`,
             status
           }
         })

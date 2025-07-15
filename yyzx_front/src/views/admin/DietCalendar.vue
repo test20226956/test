@@ -97,7 +97,7 @@
           <el-tab-pane label="点心" name="dessert" />
         </el-tabs>
 
-        <el-table :data="filteredDishes" border size="small" style="width: 100%;">
+        <el-table :data="filteredDishes" border size="small" style="width: 100%; flex: 1;">
           <el-table-column type="index" label="#" width="50" align="center" />
           <el-table-column prop="name" label="膳食名称" align="center" />
           <el-table-column label="操作" width="160" align="center">
@@ -115,6 +115,19 @@
             </template>
           </el-table-column>
         </el-table>
+
+        <div class="page-container">
+          <el-pagination
+              v-model:current-page="currentPage"
+              v-model:page-size="pageSize"
+              :page-sizes="[5,10]"
+              layout="total, sizes, prev, pager, next, jumper"
+              :total="total"
+              @size-change="handleSizeChange"
+              @current-change="handleCurrentChange"
+          />
+        </div>
+
       </div>
     </div>
   </div>
@@ -430,7 +443,8 @@ watch(() => addDietForm.type, async (newType) => {
     const res = await axios.get('/DietController/searchFood', {
       params: {
         type: newType,
-        name: ''
+        name: '',
+        pageSize:100
       }
     })
     dishOptions.value = res.data.status === 200 ? res.data.data : []
@@ -597,10 +611,24 @@ const handleDelete = async (row) => {
       }
     }
   } catch (err) {
-    console.error('删除失败', err);
-    ElMessage.error('删除失败，请联系管理员');
+    // console.error('删除失败', err);
+    // ElMessage.error('删除失败，请联系管理员');
+    ElMessage.info('已取消');
+
   }
 };
+//-----------------------------膳食列表分页------------------------------
+let currentPage = ref(1);
+let pageSize = ref(10);
+let total = ref(0);
+const handleSizeChange = (val) => {
+  pageSize.value = val;
+  fetchAllDishes();
+}
+const handleCurrentChange = (val) => {
+  currentPage.value = val;
+  fetchAllDishes();
+}
 // ------------------------初始化和搜索膳食列表---------------------------
 const dishSearch = ref('')
 const activeCategory = ref('staple')
@@ -619,11 +647,14 @@ const fetchAllDishes = async () => {
     const res = await axios.get('/DietController/searchFood', {
       params: {
         type: categoryMap[activeCategory.value],
-        name: dishSearch.value
+        name: dishSearch.value,
+        pageSize: pageSize.value,
+        pageNum: currentPage.value
       }
     })
     if (res.data.status === 200) {
       filteredDishes.value = res.data.data
+      total.value = res.data.total
     } else {
       filteredDishes.value = []
       ElMessage.warning(res.data.msg || '删除失败');
@@ -912,8 +943,8 @@ const handleMealDelete = async (row) => {
       }
     }
   } catch (err) {
-    console.error('删除失败', err);
-    ElMessage.error('删除失败，请联系管理员');
+    // console.error('删除失败', err);
+    ElMessage.info('已取消');
   }
 };
 </script>
@@ -1026,5 +1057,15 @@ const handleMealDelete = async (row) => {
 /* 表格填满剩余高度（可选） */
 .diet-right-tabs {
   margin-bottom: 8px;
+}
+.page-container{
+  flex: 0 0 10%;
+  width: 100%;
+  border-radius: 8px;
+  background-color: white;
+  display: flex;
+  justify-content: end;
+  //box-sizing: border-box;
+  //padding: 0px 16px 0px 16px;
 }
 </style>

@@ -272,6 +272,8 @@ const deleteRecord = (id) => {
     if (res.data.status == 200) {
       ElMessage.success(res.data.msg);
       init();
+    }else {
+      ElMessage.error(res.data.msg);
     }
   })
 }
@@ -404,7 +406,7 @@ const reset = () => {
       </el-form-item>
       <el-form-item label="入职时间" prop="checkOutTime" >
         <el-date-picker
-            v-model="editedUser.empolymentDate"
+            v-model="editedUser.employmentDate"
             type="date"
             placeholder="选择合同到期时间"
             value-format="YYYY-MM-DD"

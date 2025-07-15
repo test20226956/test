@@ -87,32 +87,24 @@ const login = () => {
   //   return
   // }
   let url = 'UserController/login';
-  console.log(formData.value.userCode)
-  console.log(formData.value.password);
-
   let data = {
     account: formData.value.userCode,
     password: formData.value.password
   }
-
   axios.post(url, qs.stringify(data)).then(response => {
     let rb = response.data;
     if (rb.status === 200) {
       // 取得登录成功的用户的令牌
       let responseUser = rb.data;
       let token = rb.jwt;
-      // 把用户对象变成JSON字符串
-      // let userJson=JSON.stringify(user);
       // 把用户令牌存入前端Session中
       sessionStorage.setItem('type', responseUser.type);
       sessionStorage.setItem('userName', responseUser.userName);
       sessionStorage.setItem('userId', responseUser.userId);
       sessionStorage.setItem('token', token);
       ElMessage({message:'登录成功', type:'success'})
-      // sessionStorage.setItem('user', user);
       // 登录成功
       router.push('/framework/welcome');
-
     } else {
       // 登录失败
       ElMessage({message:rb.msg, type:'error'});
