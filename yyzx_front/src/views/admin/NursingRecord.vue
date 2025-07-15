@@ -523,7 +523,9 @@ const deleteRecord = (row) => {
         }).catch(error => {
           console.log(error);
         })
-      })
+      }).catch(error => {
+        console.log(error);
+  })
 }
 
 // 客户分页
