@@ -213,7 +213,7 @@ const fetchBedStats = async () => {
         total: res.data.data.floorStats.total,
         free: res.data.data.floorStats.free,
         occupied: res.data.data.floorStats.taken,
-        out: res.data.data.floorStats.goOut
+        goOut: res.data.data.floorStats.goOut
       }
     } else {
       ElMessage.warning(res.data.msg || '床位统计数据获取失败');

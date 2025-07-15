@@ -212,9 +212,9 @@ const handleReset = (row) => {
         <el-table-column prop="age" label="年龄" min-width="80" align="center" />
         <el-table-column prop="gender" label="性别" min-width="80" align="center" />
         <el-table-column prop="roomInfo" label="房间信息" min-width="160" align="center" />
-        <el-table-column prop="flavor" label="口味" min-width="160"  align="center" />
-        <el-table-column prop="restraint" label="忌口" min-width="160"  align="center" />
-        <el-table-column prop="comment" label="备注"  align="center" />
+        <el-table-column prop="flavor" label="口味" min-width="140"  align="center" />
+        <el-table-column prop="restraint" label="忌口" min-width="140"  align="center" />
+        <el-table-column prop="comment" label="备注" min-width="140"  align="center" />
         <el-table-column label="操作" min-width="180" align="center">
           <template #default="scope">
             <el-button type="warning" size="small" plain @click="handleEdit(scope.row)">
@@ -270,6 +270,7 @@ const handleReset = (row) => {
           <el-checkbox-group v-model="editForm.restraint">
             <el-checkbox label="不吃辣" />
             <el-checkbox label="不吃香菜" />
+            <el-checkbox label="不吃葱花" />
           </el-checkbox-group>
         </el-form-item>
 
@@ -342,8 +343,8 @@ const handleReset = (row) => {
   background-color: white;
   display: flex;
   justify-content: end;
-  //box-sizing: border-box;
-  //padding: 0px 16px 0px 16px;
+  box-sizing: border-box;
+  padding: 0px 16px 0px 16px;
 }
 
 .diet-dialog .el-form-item {

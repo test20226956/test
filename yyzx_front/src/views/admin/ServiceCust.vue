@@ -326,12 +326,12 @@ const unassignCustomer = async (customer) => {
       <el-table :data="fetchedCaregivers" border style="width: 100%;height: 480px; ">
         <el-table-column type="index" label="#" width="50" align="center"/>
         <el-table-column prop="account" label="管家编号" width="100" align="center"/>
-        <el-table-column prop="userName" label="管家姓名" width="160" align="center"/>
+        <el-table-column prop="userName" label="管家姓名" min-width="160" align="center"/>
         <!--        <el-table-column prop="state" label="状态" width="80" align="center" :formatter="formatState"/>-->
-        <el-table-column prop="tel" label="手机号" width="160" align="center"/>
-        <el-table-column prop="email" label="邮箱" width="160" align="center"/>
+        <el-table-column prop="tel" label="手机号" min-width="160" align="center"/>
+        <el-table-column prop="email" label="邮箱" min-width="160" align="center"/>
         <el-table-column prop="employmentDate" label="入职日期" min-width="160" align="center"/>
-        <el-table-column label="操作" width="180" align="center">
+        <el-table-column label="操作" min-width="180" align="center">
           <template #default="scope">
             <el-button type="primary" size="small" plain @click="handleSetCust(scope.row)"
                        :disabled="scope.row.state === 0">
